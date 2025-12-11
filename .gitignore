@@ -148,3 +148,6 @@ docs/_build/
 # GitHub token (NE JAMAIS COMMITER)
 .github_token
 
+# Fichier de sortie du script de build Xcode (pour éviter le warning)
+.git/tag-created
+

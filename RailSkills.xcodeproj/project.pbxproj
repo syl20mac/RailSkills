@@ -118,7 +118,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		4EFDF6232EEAACDF0079CAA2 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
+			alwaysOutOfDate = 0;
 			buildActionMask = 8;
 			files = (
 			);
@@ -129,10 +129,11 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(SRCROOT)/.git/tag-created",
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 			shellPath = /bin/sh;
-			shellScript = "# Auto-tag version lors d'un build Release Archive\nif [ \"${CONFIGURATION}\" != \"Release\" ]; then\n    exit 0\nfi\n\n# Récupérer la version depuis Info.plist\nVERSION=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleShortVersionString\" \"${PROJECT_DIR}/Configs/Info.plist\")\nBUILD_NUMBER=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleVersion\" \"${PROJECT_DIR}/Configs/Info.plist\")\nTAG=\"v${VERSION}\"\n\necho \"🏷️  Création du tag ${TAG}...\"\n\n# Vérifier si on est dans un dépôt Git\nif ! git rev-parse --git-dir > /dev/null 2>&1; then\n    echo \"⚠️  Pas un dépôt Git. Skip.\"\n    exit 0\nfi\n\n# Vérifier si le tag existe déjà\nif git rev-parse \"${TAG}\" >/dev/null 2>&1; then\n    echo \"ℹ️  Tag ${TAG} existe déjà. Skip.\"\n    exit 0\nfi\n\n# Créer le tag\ncd \"${SRCROOT}\"\ngit tag -a \"${TAG}\" -m \"Version ${VERSION} (Build ${BUILD_NUMBER}) - Auto-tagged from Xcode\"\n\necho \"✅ Tag ${TAG} créé localement\"\necho \"💡 Pour push vers GitHub: git push origin ${TAG}\"\n";
+			shellScript = "# Auto-tag version lors d'un build Release Archive\nif [ \"${CONFIGURATION}\" != \"Release\" ]; then\n    # Créer le fichier de sortie même si on skip pour éviter les ré-exécutions\n    touch \"${SRCROOT}/.git/tag-created\" 2>/dev/null || true\n    exit 0\nfi\n\n# Récupérer la version depuis Info.plist\nVERSION=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleShortVersionString\" \"${PROJECT_DIR}/Configs/Info.plist\")\nBUILD_NUMBER=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleVersion\" \"${PROJECT_DIR}/Configs/Info.plist\")\nTAG=\"v${VERSION}\"\n\necho \"🏷️  Création du tag ${TAG}...\"\n\n# Vérifier si on est dans un dépôt Git\nif ! git rev-parse --git-dir > /dev/null 2>&1; then\n    echo \"⚠️  Pas un dépôt Git. Skip.\"\n    # Créer le fichier de sortie pour éviter les ré-exécutions\n    touch \"${SRCROOT}/.git/tag-created\" 2>/dev/null || true\n    exit 0\nfi\n\n# Vérifier si le tag existe déjà\nif git rev-parse \"${TAG}\" >/dev/null 2>&1; then\n    echo \"ℹ️  Tag ${TAG} existe déjà. Skip.\"\n    # Créer le fichier de sortie pour éviter les ré-exécutions\n    touch \"${SRCROOT}/.git/tag-created\" 2>/dev/null || true\n    exit 0\nfi\n\n# Créer le tag\ncd \"${SRCROOT}\"\ngit tag -a \"${TAG}\" -m \"Version ${VERSION} (Build ${BUILD_NUMBER}) - Auto-tagged from Xcode\"\n\n# Créer le fichier de sortie pour que Xcode sache que le script a été exécuté\ntouch \"${SRCROOT}/.git/tag-created\" 2>/dev/null || true\n\necho \"✅ Tag ${TAG} créé localement\"\necho \"💡 Pour push vers GitHub: git push origin ${TAG}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
