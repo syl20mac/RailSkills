@@ -1,9 +1,9 @@
-# ✅ Solution : Dossiers CTT sur SharePoint
+# ✅ Solution : Dossiers Manager Traction sur SharePoint
 
 ## 🎯 Problème résolu
 
-Le CTT s'authentifie au lancement de l'app avec son **email et mot de passe**.  
-Le serveur retourne un `UserProfile` contenant le **`cttId`**.
+Le Manager Traction s'authentifie au lancement de l'app avec son **email et mot de passe**.  
+Le serveur retourne un `UserProfile` contenant le **`cttId`** (identifiant technique).
 
 ## 📊 Structure `UserProfile` existante
 
@@ -17,7 +17,7 @@ struct UserProfile: Codable {
 }
 ```
 
-Le `WebAuthService.shared.currentUser?.cttId` contient l'identifiant unique du CTT.
+Le `WebAuthService.shared.currentUser?.cttId` contient l'identifiant unique du Manager Traction.
 
 ## 🔧 Solution à implémenter
 

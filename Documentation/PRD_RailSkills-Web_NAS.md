@@ -1,5 +1,5 @@
 ## PRD – RailSkills-Web (NAS)  
-**Application web de traitement des données RailSkills iPad pour CTT**  
+**Application web de traitement des données RailSkills iPad pour Manager Traction**  
 
 Auteur : Sylvain Gallon  
 Version : 1.0  
@@ -16,16 +16,16 @@ Date : Novembre 2025
 
 ### 1.1 Problème à résoudre
 
-L’application iOS RailSkills permet aux CTT de réaliser les évaluations triennales et de synchroniser les données (conducteurs, checklists, notes) vers SharePoint.  
+L’application iOS RailSkills permet aux Manager Traction de réaliser les évaluations triennales et de synchroniser les données (conducteurs, checklists, notes) vers SharePoint.  
 Cependant, le traitement avancé de ces données (analyse, consolidation multi-conducteurs, préparation de rapports, vues tableaux, exports PC) est difficile directement depuis l’iPad.
 
 ### 1.2 Solution proposée
 
-Mettre en place **RailSkills-Web (NAS)**, une application web hébergée sur le NAS TerraMaster du CTT ou de l’unité, permettant :
+Mettre en place **RailSkills-Web (NAS)**, une application web hébergée sur le NAS TerraMaster du Manager Traction ou de l’unité, permettant :
 
 - de **lire les JSON chiffrés** exportés/synchronisés par RailSkills iOS vers SharePoint,  
 - de **les déchiffrer localement** sur le NAS avec le même « secret organisationnel »,  
-- de proposer au CTT une **interface web complète** pour :
+- de proposer au Manager Traction une **interface web complète** pour :
   - parcourir les conducteurs et leurs suivis,  
   - analyser les checklists (états, notes, dates),  
   - générer des vues tableaux (type Excel) et des exports (CSV / PDF),  
@@ -40,9 +40,9 @@ Le tout **sans SNCF_ID**, avec une intégration limitée à :
 
 ## 2. Vue d’ensemble fonctionnelle
 
-### 2.1 Rôle principal : CTT / ARC
+### 2.1 Rôle principal : Manager Traction / ARC
 
-Le CTT (ou ARC) utilise RailSkills-Web pour :
+Le Manager Traction (ou ARC) utilise RailSkills-Web pour :
 
 - **Lister tous les conducteurs** présents dans les exports JSON SharePoint.  
 - **Visualiser le détail** des suivis : état de chaque question, notes, dates, progression globale.  
@@ -176,7 +176,7 @@ Le back-end Node.js doit :
 
 ---
 
-## 6. Fonctionnalités côté CTT (UI Web)
+## 6. Fonctionnalités côté Manager Traction (UI Web)
 
 ### 6.1 Page 1 – Tableau de bord (Dashboard)
 

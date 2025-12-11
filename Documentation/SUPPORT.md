@@ -110,7 +110,7 @@ R :
 **Q : Je ne vois pas mes données après la synchronisation**  
 R : 
 1. Vérifiez que vous utilisez le même compte Azure AD
-2. Les données sont filtrées par CTT (`ownerSNCFId`) - assurez-vous que vos données ont le bon identifiant
+2. Les données sont filtrées par Manager Traction (`ownerSNCFId`) - assurez-vous que vos données ont le bon identifiant
 3. Vérifiez dans Réglages → Synchronisation SharePoint que la synchronisation est activée
 
 **Q : Comment réinitialiser l'application ?**  
@@ -154,7 +154,7 @@ R : La reconnaissance vocale permet de dicter les notes dans les évaluations. L
 
 **Solutions :**
 1. Vérifier que vous êtes connecté avec le bon compte Azure AD
-2. Vérifier le filtre par CTT (`ownerSNCFId`)
+2. Vérifier le filtre par Manager Traction (`ownerSNCFId`)
 3. Vérifier dans SharePoint que les données existent toujours
 4. Importer depuis un export JSON si vous en avez un
 
@@ -192,7 +192,7 @@ Les données sont organisées comme suit :
 **Sur SharePoint (si activé) :**
 ```
 RailSkills/
-├── CTT_{cttId}/          # Dossier par CTT
+├── CTT_{cttId}/          # Dossier par Manager Traction (CTT_ est un préfixe technique)
 │   └── Data/
 │       └── {nom-conducteur}/
 │           ├── {nom-conducteur}.json
@@ -216,9 +216,9 @@ RailSkills/
 
 ### Isolation des Données
 
-- Chaque CTT ne peut accéder qu'à ses propres données
+- Chaque Manager Traction ne peut accéder qu'à ses propres données
 - Validation de l'identité lors de la synchronisation
-- Pas d'accès croisé entre différents CTT
+- Pas d'accès croisé entre différents Manager Traction
 
 Pour plus d'informations, consultez la [Politique de Confidentialité](PRIVACY_POLICY_TEMPLATE.md).
 

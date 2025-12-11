@@ -88,7 +88,7 @@ final class Store: ObservableObject {
     // MARK: - Filtrage logique des données
     //
     // Historique :
-    // - Ces propriétés filtraient auparavant les données par identité SNCF (CTT) via SNCFIdentityService
+    // - Ces propriétés filtraient auparavant les données par identité SNCF (Manager Traction) via SNCFIdentityService
     // - Suite à la suppression de SNCF_ID, l'application fonctionne désormais sur un jeu de données global
     // - On conserve ces propriétés pour éviter de casser l'API interne (ViewModel / vues) mais
     //   elles retournent simplement les collections complètes.

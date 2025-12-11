@@ -1,10 +1,10 @@
-# 📁 Structure SharePoint - Segmentation par CTT
+# 📁 Structure SharePoint - Segmentation par Manager Traction
 
 ## 🔍 Situation actuelle
 
 ### Ancienne structure (v1.x avec SNCF_ID)
 
-Les conducteurs étaient organisés par **dossier CTT** :
+Les conducteurs étaient organisés par **dossier Manager Traction** :
 
 ```
 SharePoint/RailSkills/
@@ -21,12 +21,12 @@ SharePoint/RailSkills/
 ```
 
 **✅ Avantages** :
-- Chaque CTT a son propre espace
+- Chaque Manager Traction a son propre espace
 - Séparation claire des responsabilités
 - Facile de voir qui gère quels conducteurs
 
 **❌ Inconvénients** :
-- Duplication si un conducteur change de CTT
+- Duplication si un conducteur change de Manager Traction
 - Complexe pour les rapports globaux
 - Nécessite SNCF_ID (supprimé depuis)
 
@@ -51,7 +51,7 @@ SharePoint/RailSkills/
 - Ne nécessite pas SNCF_ID
 
 **❌ Inconvénients** :
-- Pas de séparation par CTT
+- Pas de séparation par Manager Traction
 - Tous les conducteurs au même niveau
 - Difficile de voir qui gère quoi
 
@@ -62,13 +62,13 @@ Le système **SNCF_ID** (authentification via le SDK SNCF) a été supprimé car
 2. 🔧 Complexité technique
 3. 🎯 Besoin de simplifier pour le MVP
 
-Sans identité CTT automatique, on ne pouvait plus créer les dossiers `CTT_{sncfId}/`
+Sans identité Manager Traction automatique, on ne pouvait plus créer les dossiers `CTT_{sncfId}/` (note: `CTT_` est un préfixe technique)
 
 ## 💡 Solutions proposées
 
-### Option 1 : Réintroduire la segmentation par CTT (recommandé)
+### Option 1 : Réintroduire la segmentation par Manager Traction (recommandé)
 
-Utiliser le **profil CTT manuel** au lieu de SNCF_ID.
+Utiliser le **profil Manager Traction manuel** au lieu de SNCF_ID.
 
 #### Structure proposée
 
@@ -126,7 +126,8 @@ func syncDrivers(_ drivers: [DriverRecord]) async throws {
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted
         
-        // 🆕 NOUVEAU : Segmentation par CTT
+        // 🆕 NOUVEAU : Segmentation par Manager Traction
+        // Note: cttFolder et CTT_ sont des identifiants techniques
         let cttFolder = Store.shared.cttIdentifier
         let basePath = "RailSkills/CTT_\(cttFolder)/Data"
         
@@ -143,7 +144,7 @@ func syncDrivers(_ drivers: [DriverRecord]) async throws {
                 let folderName = sanitizedName.isEmpty ? driver.id.uuidString : sanitizedName
                 let driverFolderPath = "\(basePath)/\(folderName)"
                 
-                Logger.info("Synchronisation '\(driver.name)' dans CTT_\(cttFolder)", category: "SharePointSync")
+                Logger.info("Synchronisation '\(driver.name)' dans dossier Manager Traction (CTT_\(cttFolder))", category: "SharePointSync")
                 
                 try await ensureFolderExists(siteId: siteId, folderPath: driverFolderPath)
                 let data = try encoder.encode(driver)
@@ -204,15 +205,15 @@ Section {
         }
     }
 } header: {
-    Text("Profil CTT")
+    Text("Profil Manager Traction")
 } footer: {
-    Text("Les conducteurs seront synchronisés dans votre dossier CTT personnel sur SharePoint. Si vide, le nom de l'appareil sera utilisé.")
+    Text("Les conducteurs seront synchronisés dans votre dossier Manager Traction personnel sur SharePoint. Si vide, le nom de l'appareil sera utilisé.")
 }
 ```
 
 #### Avantages de cette solution
 
-✅ Chaque CTT a son dossier sur SharePoint  
+✅ Chaque Manager Traction a son dossier sur SharePoint  
 ✅ Séparation claire des responsabilités  
 ✅ Compatible avec l'architecture actuelle (pas de SNCF_ID)  
 ✅ Configuration simple et intuitive  
@@ -233,7 +234,7 @@ Garder tous les conducteurs au même endroit, mais ajouter un champ `ownerCTT` d
 #### Inconvénients
 
 ❌ Pas de séparation physique des dossiers  
-❌ Tous les CTT voient tous les conducteurs  
+❌ Tous les Manager Traction voient tous les conducteurs  
 ❌ Moins clair visuellement
 
 ---
