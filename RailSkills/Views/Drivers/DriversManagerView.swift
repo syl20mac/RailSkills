@@ -59,6 +59,8 @@ struct DriversManagerView: View {
                     
                     VStack(spacing: 12) {
                         Button {
+                            // Fermer Excel si ouvert, puis ouvrir SharePoint
+                            showingImportExcelSheet = false
                             showingImportSharePointSheet = true
                         } label: {
                             HStack {
@@ -73,6 +75,8 @@ struct DriversManagerView: View {
                         }
                         
                         Button {
+                            // Fermer SharePoint si ouvert, puis ouvrir Excel
+                            showingImportSharePointSheet = false
                             showingImportExcelSheet = true
                         } label: {
                             HStack {
@@ -143,12 +147,16 @@ struct DriversManagerView: View {
                     }
                     
                     Button {
+                        // Fermer SharePoint si ouvert, puis ouvrir Excel
+                        showingImportSharePointSheet = false
                         showingImportExcelSheet = true
                     } label: {
                         Label("Importer depuis Excel", systemImage: "doc.badge.plus")
                     }
                     
                     Button {
+                        // Fermer Excel si ouvert, puis ouvrir SharePoint
+                        showingImportExcelSheet = false
                         showingImportSharePointSheet = true
                     } label: {
                         Label("Importer depuis SharePoint", systemImage: "tray.and.arrow.down")
@@ -274,92 +282,12 @@ struct DriversManagerView: View {
     }
     
     private func driverDetailView(for index: Int) -> some View {
-        Form {
-            Section {
-                TextField("Nom *", text: Binding(
-                    get: { vm.store.drivers[index].name },
-                    set: { 
-                        let trimmedName = $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if ValidationService.validateDriverName(trimmedName) {
-                            vm.store.drivers[index].name = trimmedName
-                        } else {
-                            Logger.warning("Nom de conducteur invalide lors de l'édition: \(trimmedName)", category: "DriversManager")
-                        }
-                    }
-                ))
-                
-                TextField("Prénom", text: Binding(
-                    get: { vm.store.drivers[index].firstName ?? "" },
-                    set: { 
-                        let trimmedFirstName = $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                        vm.store.drivers[index].firstName = trimmedFirstName.isEmpty ? nil : trimmedFirstName
-                    }
-                ))
-                
-                TextField("Numéro de CP", text: Binding(
-                    get: { vm.store.drivers[index].cpNumber ?? "" },
-                    set: { 
-                        let trimmedCpNumber = $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                        vm.store.drivers[index].cpNumber = trimmedCpNumber.isEmpty ? nil : trimmedCpNumber
-                    }
-                ))
-                
-                DatePicker(
-                    "Début triennale",
-                    selection: Binding(
-                        get: { vm.store.drivers[index].triennialStart ?? Date() },
-                        set: { vm.store.drivers[index].triennialStart = $0 }
-                    ),
-                    displayedComponents: .date
-                )
-            } header: {
-                Text("Informations")
-            } footer: {
-                Text("Les champs marqués d'un astérisque (*) sont obligatoires.")
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-            }
-            
-            Section {
-                Button(role: .destructive) {
-                    pendingDeletionIDs = [vm.store.drivers[index].id]
-                    showingDeleteConfirmation = true
-                } label: {
-                    HStack {
-                        Spacer()
-                        Label("Supprimer le conducteur", systemImage: "trash")
-                        Spacer()
-                    }
-                }
-            }
-        }
-        .navigationTitle(vm.store.drivers[index].fullName)
-        .alert("Confirmer la suppression", isPresented: $showingDeleteConfirmation) {
-            Button("Annuler", role: .cancel) {
-                pendingDeletionIDs.removeAll()
-            }
-            Button("Supprimer", role: .destructive) {
-                guard !pendingDeletionIDs.isEmpty else { return }
-                let idsToRemove = Set(pendingDeletionIDs)
-                pendingDeletionIDs.removeAll()
-                vm.store.drivers.removeAll { driver in
-                    idsToRemove.contains(driver.id)
-                }
-                Logger.warning("Conducteur supprimé depuis la vue de détail", category: "DriversManager")
-                // Ajuster l'index sélectionné si nécessaire après suppression
-                if vm.store.drivers.isEmpty {
-                    vm.selectedDriverIndex = 0
-                } else if !vm.store.drivers.indices.contains(vm.selectedDriverIndex) {
-                    vm.selectedDriverIndex = max(0, vm.store.drivers.count - 1)
-                }
-            }
-        } message: {
-            if let driver = vm.store.drivers.first(where: { $0.id == pendingDeletionIDs.first }) {
-                Text("Voulez-vous supprimer le conducteur \"\(driver.name)\" ? Cette action est irréversible.")
-            } else {
-                Text("Voulez-vous supprimer ce conducteur ? Cette action est irréversible.")
-            }
-        }
+        DriverDetailView(
+            vm: vm,
+            driverIndex: index,
+            pendingDeletionIDs: $pendingDeletionIDs,
+            showingDeleteConfirmation: $showingDeleteConfirmation
+        )
     }
     
     private func urgency(of driver: DriverRecord) -> Int {
@@ -465,6 +393,131 @@ struct DriversManagerView: View {
                     showingEditSheet = false
                 }
                 .fontWeight(.semibold)
+            }
+        }
+    }
+}
+
+// MARK: - Vue de détail du conducteur
+
+/// Vue de détail d'un conducteur avec fermeture automatique après suppression
+private struct DriverDetailView: View {
+    @ObservedObject var vm: ViewModel
+    let driverIndex: Int
+    @Binding var pendingDeletionIDs: [UUID]
+    @Binding var showingDeleteConfirmation: Bool
+    @Environment(\.dismiss) private var dismiss
+    
+    // Vérifier que le conducteur existe toujours
+    private var driverExists: Bool {
+        vm.store.drivers.indices.contains(driverIndex)
+    }
+    
+    var body: some View {
+        Group {
+            if driverExists {
+                Form {
+                    Section {
+                        TextField("Nom *", text: Binding(
+                            get: { vm.store.drivers[driverIndex].name },
+                            set: { 
+                                let trimmedName = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if ValidationService.validateDriverName(trimmedName) {
+                                    vm.store.drivers[driverIndex].name = trimmedName
+                                } else {
+                                    Logger.warning("Nom de conducteur invalide lors de l'édition: \(trimmedName)", category: "DriversManager")
+                                }
+                            }
+                        ))
+                        
+                        TextField("Prénom", text: Binding(
+                            get: { vm.store.drivers[driverIndex].firstName ?? "" },
+                            set: { 
+                                let trimmedFirstName = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                                vm.store.drivers[driverIndex].firstName = trimmedFirstName.isEmpty ? nil : trimmedFirstName
+                            }
+                        ))
+                        
+                        TextField("Numéro de CP", text: Binding(
+                            get: { vm.store.drivers[driverIndex].cpNumber ?? "" },
+                            set: { 
+                                let trimmedCpNumber = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                                vm.store.drivers[driverIndex].cpNumber = trimmedCpNumber.isEmpty ? nil : trimmedCpNumber
+                            }
+                        ))
+                        
+                        DatePicker(
+                            "Début triennale",
+                            selection: Binding(
+                                get: { vm.store.drivers[driverIndex].triennialStart ?? Date() },
+                                set: { vm.store.drivers[driverIndex].triennialStart = $0 }
+                            ),
+                            displayedComponents: .date
+                        )
+                    } header: {
+                        Text("Informations")
+                    } footer: {
+                        Text("Les champs marqués d'un astérisque (*) sont obligatoires.")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                    
+                    Section {
+                        Button(role: .destructive) {
+                            pendingDeletionIDs = [vm.store.drivers[driverIndex].id]
+                            showingDeleteConfirmation = true
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Label("Supprimer le conducteur", systemImage: "trash")
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+                .navigationTitle(vm.store.drivers[driverIndex].fullName)
+                .alert("Confirmer la suppression", isPresented: $showingDeleteConfirmation) {
+                    Button("Annuler", role: .cancel) {
+                        pendingDeletionIDs.removeAll()
+                    }
+                    Button("Supprimer", role: .destructive) {
+                        guard !pendingDeletionIDs.isEmpty else { return }
+                        let idsToRemove = Set(pendingDeletionIDs)
+                        pendingDeletionIDs.removeAll()
+                        
+                        // Utiliser la fonction du ViewModel qui gère la suppression locale ET SharePoint
+                        vm.deleteDrivers(byIds: idsToRemove)
+                        
+                        Logger.warning("Conducteur supprimé depuis la vue de détail", category: "DriversManager")
+                        
+                        // Ajuster l'index sélectionné si nécessaire après suppression
+                        if vm.store.drivers.isEmpty {
+                            vm.selectedDriverIndex = 0
+                        } else if !vm.store.drivers.indices.contains(vm.selectedDriverIndex) {
+                            vm.selectedDriverIndex = max(0, vm.store.drivers.count - 1)
+                        }
+                        
+                        // Fermer la vue après suppression
+                        dismiss()
+                    }
+                } message: {
+                    if let driver = vm.store.drivers.first(where: { $0.id == pendingDeletionIDs.first }) {
+                        Text("Voulez-vous supprimer le conducteur \"\(driver.name)\" ? Cette action est irréversible.")
+                    } else {
+                        Text("Voulez-vous supprimer ce conducteur ? Cette action est irréversible.")
+                    }
+                }
+            } else {
+                // Le conducteur n'existe plus, fermer automatiquement la vue
+                ContentUnavailableView(
+                    "Conducteur supprimé",
+                    systemImage: "person.slash",
+                    description: Text("Ce conducteur a été supprimé.")
+                )
+                .onAppear {
+                    // Fermer la vue si le conducteur n'existe plus
+                    dismiss()
+                }
             }
         }
     }
