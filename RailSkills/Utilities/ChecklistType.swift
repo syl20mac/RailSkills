@@ -37,3 +37,4 @@ enum ChecklistType: String, CaseIterable {
         }
     }
 }
+

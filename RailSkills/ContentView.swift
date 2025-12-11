@@ -994,13 +994,6 @@ struct ContentView: View {
                 }
                 .tag(1)
             
-            // Onglet Partage / Export
-            SharingView(vm: vm)
-                .tabItem {
-                    Label("Partage", systemImage: "square.and.arrow.up")
-                }
-                .tag(2)
-            
             // Onglet Dashboard
             NavigationStack {
                 DashboardView(vm: vm)

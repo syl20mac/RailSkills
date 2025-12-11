@@ -336,6 +336,33 @@ struct SettingsView: View {
                 }
                 
                 // ═══════════════════════════════════════════
+                // SECTION UTILISATEUR : Partage & Export
+                // ═══════════════════════════════════════════
+                Section {
+                    NavigationLink {
+                        SharingView(vm: vm)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "square.and.arrow.up")
+                                .foregroundStyle(SNCFColors.ceruleen)
+                                .frame(width: 24)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Partage & Export")
+                                    .font(.subheadline.weight(.medium))
+                                Text("Exporter et importer des données")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Partage")
+                } footer: {
+                    Text("Exportez vos conducteurs en JSON ou CSV, importez depuis un fichier")
+                }
+                
+                // ═══════════════════════════════════════════
                 // SECTION PERSONNALISATION
                 // ═══════════════════════════════════════════
                 Section {

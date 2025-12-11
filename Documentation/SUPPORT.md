@@ -283,3 +283,4 @@ Avant de contacter le support, vérifiez :
 ---
 
 **Dernière mise à jour :** 9 décembre 2025
+

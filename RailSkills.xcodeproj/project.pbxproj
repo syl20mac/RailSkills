@@ -55,6 +55,7 @@
 				4E8C12A32EE03FD50037613D /* Sources */,
 				4E8C12A42EE03FD50037613D /* Frameworks */,
 				4E8C12A52EE03FD50037613D /* Resources */,
+				4EFDF6232EEAACDF0079CAA2 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -113,6 +114,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4EFDF6232EEAACDF0079CAA2 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 8;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/sh;
+			shellScript = "# Auto-tag version lors d'un build Release Archive\nif [ \"${CONFIGURATION}\" != \"Release\" ]; then\n    exit 0\nfi\n\n# Récupérer la version depuis Info.plist\nVERSION=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleShortVersionString\" \"${PROJECT_DIR}/Configs/Info.plist\")\nBUILD_NUMBER=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleVersion\" \"${PROJECT_DIR}/Configs/Info.plist\")\nTAG=\"v${VERSION}\"\n\necho \"🏷️  Création du tag ${TAG}...\"\n\n# Vérifier si on est dans un dépôt Git\nif ! git rev-parse --git-dir > /dev/null 2>&1; then\n    echo \"⚠️  Pas un dépôt Git. Skip.\"\n    exit 0\nfi\n\n# Vérifier si le tag existe déjà\nif git rev-parse \"${TAG}\" >/dev/null 2>&1; then\n    echo \"ℹ️  Tag ${TAG} existe déjà. Skip.\"\n    exit 0\nfi\n\n# Créer le tag\ncd \"${SRCROOT}\"\ngit tag -a \"${TAG}\" -m \"Version ${VERSION} (Build ${BUILD_NUMBER}) - Auto-tagged from Xcode\"\n\necho \"✅ Tag ${TAG} créé localement\"\necho \"💡 Pour push vers GitHub: git push origin ${TAG}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4E8C12A32EE03FD50037613D /* Sources */ = {
@@ -252,7 +274,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = UD44R8K7U8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -281,7 +303,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = UD44R8K7U8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;

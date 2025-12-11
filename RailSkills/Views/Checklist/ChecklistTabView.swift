@@ -577,3 +577,4 @@ struct ChecklistTabView: View {
         return clamped >= 1 ? SNCFColors.menthe : SNCFColors.ceruleen
     }
 }
+

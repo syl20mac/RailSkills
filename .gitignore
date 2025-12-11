@@ -144,3 +144,7 @@ docs/_build/
 # Temporary files
 *.orig
 *.rej
+
+# GitHub token (NE JAMAIS COMMITER)
+.github_token
+

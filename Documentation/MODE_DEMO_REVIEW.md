@@ -105,3 +105,4 @@ Si les reviewers rencontrent des problèmes, ils peuvent :
 ---
 
 **Note** : Le mode démo est conçu spécifiquement pour les reviewers Apple et permet de tester toutes les fonctionnalités sans configuration supplémentaire.
+

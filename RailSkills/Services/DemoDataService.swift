@@ -163,3 +163,4 @@ class DemoDataService {
         Logger.success("Données de démonstration chargées: \(demoDrivers.count) conducteur(s), \(demoChecklist.items.count) élément(s) de checklist", category: "DemoData")
     }
 }
+

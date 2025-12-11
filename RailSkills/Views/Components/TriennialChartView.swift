@@ -260,3 +260,4 @@ struct TriennialChartData {
     let checklistProgress: Double       // 0.0 à 1.0
     let daysRemaining: Int
 }
+
