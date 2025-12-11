@@ -1,0 +1,85 @@
+Implémente un backend Node.js/Express pour RailSkills qui gère les tokens SharePoint.
+
+CONTEXTE:
+Application iOS RailSkills ne peut pas avoir de Client Secret hardcodé (rejet Apple).
+Le backend doit obtenir des tokens depuis Azure AD et les fournir aux clients iOS.
+
+Architecture: iPad → Backend (ce serveur) → Azure AD → SharePoint
+
+CRÉER:
+1. server.js - Serveur Express
+2. package.json - Dépendances (express, axios, cors, dotenv)
+3. .env.example - Template config
+4. .gitignore - Protection secrets
+5. README.md - Documentation
+
+ENDPOINTS À IMPLÉMENTER:
+
+1. GET /api/health
+   Retourne: { status: "ok", service: "RailSkills Backend", version: "1.0.0", timestamp }
+
+2. POST /api/sharepoint/token
+   Body: { appVersion, platform } (optionnel)
+   Retourne: { accessToken, expiresIn, tokenType, cached }
+   
+   Logique:
+   - Vérifier cache (si token valide, retourner)
+   - Sinon, appeler Azure AD:
+     POST https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token
+     Body (x-www-form-urlencoded):
+       grant_type=client_credentials
+       client_id={clientId}
+       client_secret={clientSecret}
+       scope=https://graph.microsoft.com/.default
+   - Mettre en cache (avec expiration - 5 min de marge)
+   - Retourner token
+
+3. POST /api/sharepoint/token/invalidate
+   Invalide le cache
+
+4. GET /api/stats
+   Retourne état du cache
+
+CONFIGURATION AZURE AD:
+Tenant ID: 4a7c8238-5799-4b16-9fc6-9ad8fce5a7d9
+Client ID: bd394412-97bf-4513-a59f-e023b010dff7
+Client Secret: depuis .env uniquement (AZURE_CLIENT_SECRET)
+Scope: https://graph.microsoft.com/.default
+
+EXIGENCES:
+- Code commenté en français
+- Client Secret JAMAIS hardcodé (toujours process.env)
+- Vérifier que AZURE_CLIENT_SECRET existe au démarrage
+- Cache simple en mémoire: { token: string, expiresAt: timestamp }
+- Logs des demandes (sans afficher les tokens)
+- Gestion d'erreurs complète (try/catch)
+- CORS activé
+- Port 3000
+
+STRUCTURE .env:
+AZURE_TENANT_ID=4a7c8238-5799-4b16-9fc6-9ad8fce5a7d9
+AZURE_CLIENT_ID=bd394412-97bf-4513-a59f-e023b010dff7
+AZURE_CLIENT_SECRET=votre_client_secret_ici
+PORT=3000
+NODE_ENV=development
+
+SCRIPTS package.json:
+"start": "node server.js"
+"dev": "nodemon server.js"
+
+TESTS CURL À INCLURE DANS README:
+curl http://localhost:3000/api/health
+curl -X POST http://localhost:3000/api/sharepoint/token -H "Content-Type: application/json" -d '{"appVersion":"2.0","platform":"iOS"}'
+
+CRITÈRES DE SUCCÈS:
+✅ Serveur démarre sans erreur
+✅ /api/health répond
+✅ /api/sharepoint/token retourne un token valide
+✅ Cache fonctionne (2ème appel instantané)
+✅ Client Secret jamais exposé
+✅ Code en français
+✅ .env ignoré par Git
+
+Crée tous les fichiers dans un dossier Backend_RailSkills/
+
+

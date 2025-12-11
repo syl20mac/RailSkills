@@ -1,0 +1,6 @@
+#include "Base.xcconfig"
+
+APP_DISPLAY_NAME = Railskills
+PRODUCT_BUNDLE_IDENTIFIER = com.monsite.monapp
+SWIFT_OPTIMIZATION_LEVEL = -Owholemodule
+BASE_API_URL = https://api.staging.monsite.com

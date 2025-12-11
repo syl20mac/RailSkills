@@ -1,0 +1,20 @@
+Ajoute un message d'information dans le formulaire de création de compte, juste avant le bouton de soumission.
+
+Le message doit afficher :
+- Titre : "Visibilité des données"
+- Texte : "Les données saisies dans RailSkills pourront être consultées par votre encadrement pour le suivi triennal réglementaire."
+- Icône : ℹ️ (info)
+
+Le message doit être bien visible avec un style d'alerte (alert-info), placé après tous les champs de saisie mais avant le bouton "Créer mon compte" ou "Create account".
+
+Utilise le style Bootstrap si disponible (alert alert-info), sinon crée un style similaire avec une bordure gauche bleue et un fond clair.
+
+Le texte doit être identique à celui de l'application iOS pour garantir la cohérence.
+
+
+
+
+
+
+
+

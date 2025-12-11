@@ -1,0 +1,31 @@
+Ajoute ces 4 endpoints API au backend Express. Utilise axios pour les requêtes HTTP. Le serveur tourne avec PM2.
+
+1. GET /api/health
+   - Retourne JSON : { status: "ok", timestamp: Date ISO, service: "RailSkills Backend" }
+
+2. POST /api/sharepoint/token
+   - Fait une requête POST à https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2/v2.0/token
+   - Body en x-www-form-urlencoded avec : client_id, client_secret, scope (https://graph.microsoft.com/.default), grant_type (client_credentials)
+   - Les valeurs viennent de process.env : AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+   - Retourne JSON : { accessToken, expiresIn, tokenType }
+   - Log console : "[SharePoint] Token généré"
+   - Si erreur : status 500 avec { error: "message" }
+
+3. GET /api/organization/secret
+   - Retourne JSON : { secret: ORGANIZATION_SECRET, organizationName: ORGANIZATION_NAME, updatedAt: Date ISO }
+   - Valeurs par défaut si env manquant : secret="RailSkills.SNCF.2024", organizationName="SNCF Traction"
+
+4. GET /api/organization
+   - Retourne JSON : { name: ORGANIZATION_NAME ou "SNCF Traction" }
+
+Ajoute aussi ces variables dans .env.example (créer si n'existe pas) :
+AZURE_TENANT_ID=4a7c8238-5799-4b16-9fc6-9ad8fce5a7d9
+AZURE_CLIENT_ID=bd394412-97bf-4513-a59f-e023b010dff7
+AZURE_CLIENT_SECRET=
+ORGANIZATION_NAME=SNCF Traction
+ORGANIZATION_SECRET=
+
+Installe axios si pas présent : npm install axios
+
+Ne modifie pas le .env existant, seulement .env.example
+

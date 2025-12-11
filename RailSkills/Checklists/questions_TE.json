@@ -1,0 +1,160 @@
+{
+  "title": "Checklist TE - Test d'Évaluation",
+  "items": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "title": "Évaluation Théorique",
+      "isCategory": true,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440002",
+      "title": "Connaissance de la signalisation ferroviaire",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440003",
+      "title": "Maîtrise de la réglementation CFL",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440004",
+      "title": "Connaissance des procédures d'exploitation",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440005",
+      "title": "Compréhension des consignes de sécurité",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440006",
+      "title": "Évaluation Pratique",
+      "isCategory": true,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440007",
+      "title": "Conduite en conditions normales",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440008",
+      "title": "Gestion des situations d'urgence",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440009",
+      "title": "Respect des limitations de vitesse",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440010",
+      "title": "Précision des arrêts en gare",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440011",
+      "title": "Communication avec le poste de commande",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440012",
+      "title": "Gestion des pannes et incidents",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440013",
+      "title": "Compétences Comportementales",
+      "isCategory": true,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440014",
+      "title": "Attitude professionnelle",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440015",
+      "title": "Respect des horaires et des consignes",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440016",
+      "title": "Capacité à travailler en équipe",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440017",
+      "title": "Gestion du stress et de la pression",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440018",
+      "title": "Communication avec les passagers",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440019",
+      "title": "Points d'Attention",
+      "isCategory": true,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440020",
+      "title": "Points à améliorer identifiés",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440021",
+      "title": "Recommandations de formation complémentaire",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    },
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440022",
+      "title": "Observations générales",
+      "isCategory": false,
+      "checked": false,
+      "notes": null
+    }
+  ],
+  "ownerSNCFId": null
+}

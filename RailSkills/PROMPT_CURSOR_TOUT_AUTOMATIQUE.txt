@@ -1,0 +1,113 @@
+Fais TOUTES ces modifications sur le backend RailSkills. Execute chaque étape.
+
+## ÉTAPE 1 : Installer axios
+Exécute : npm install axios
+
+## ÉTAPE 2 : Ajouter les routes API
+
+Dans le fichier principal du serveur (server.js, app.js ou index.js), ajoute ces routes :
+
+```javascript
+const axios = require('axios');
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'RailSkills Backend'
+  });
+});
+
+// Token SharePoint via Azure AD
+app.post('/api/sharepoint/token', async (req, res) => {
+  try {
+    const tenantId = process.env.AZURE_TENANT_ID;
+    const clientId = process.env.AZURE_CLIENT_ID;
+    const clientSecret = process.env.AZURE_CLIENT_SECRET;
+    
+    if (!tenantId || !clientId || !clientSecret) {
+      console.error('[SharePoint] Variables Azure AD manquantes');
+      return res.status(500).json({ error: 'Configuration Azure AD manquante sur le serveur' });
+    }
+    
+    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+    
+    const params = new URLSearchParams();
+    params.append('client_id', clientId);
+    params.append('client_secret', clientSecret);
+    params.append('scope', 'https://graph.microsoft.com/.default');
+    params.append('grant_type', 'client_credentials');
+    
+    const response = await axios.post(tokenUrl, params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    
+    console.log('[SharePoint] Token généré avec succès');
+    
+    res.json({
+      accessToken: response.data.access_token,
+      expiresIn: response.data.expires_in,
+      tokenType: response.data.token_type
+    });
+  } catch (error) {
+    console.error('[SharePoint] Erreur:', error.response?.data || error.message);
+    res.status(500).json({ 
+      error: 'Impossible d\'obtenir le token SharePoint',
+      details: error.response?.data?.error_description || error.message
+    });
+  }
+});
+
+// Secret organisationnel pour le chiffrement
+app.get('/api/organization/secret', (req, res) => {
+  const cttIdentity = req.headers['x-ctt-identity'] || 'anonymous';
+  console.log(`[Organization] Secret demandé par ${cttIdentity}`);
+  
+  res.json({
+    secret: process.env.ORGANIZATION_SECRET || 'RailSkills.SNCF.2024',
+    organizationName: process.env.ORGANIZATION_NAME || 'SNCF Traction',
+    updatedAt: new Date().toISOString()
+  });
+});
+
+// Info organisation
+app.get('/api/organization', (req, res) => {
+  res.json({
+    name: process.env.ORGANIZATION_NAME || 'SNCF Traction'
+  });
+});
+```
+
+## ÉTAPE 3 : Configurer le fichier .env
+
+Ajoute ces lignes dans le fichier .env (crée-le s'il n'existe pas) :
+
+```
+AZURE_TENANT_ID=4a7c8238-5799-4b16-9fc6-9ad8fce5a7d9
+AZURE_CLIENT_ID=bd394412-97bf-4513-a59f-e023b010dff7
+AZURE_CLIENT_SECRET=REMPLACER_PAR_LE_VRAI_SECRET
+ORGANIZATION_NAME=SNCF Traction
+ORGANIZATION_SECRET=RailSkills.Chiffrement.2024
+```
+
+## ÉTAPE 4 : Vérifier que dotenv est chargé
+
+Au début du fichier serveur, vérifie que cette ligne existe :
+```javascript
+require('dotenv').config();
+```
+
+Si elle n'existe pas, ajoute-la en haut du fichier et installe dotenv : npm install dotenv
+
+## ÉTAPE 5 : Tester
+
+Après les modifications, exécute ces commandes pour vérifier :
+```bash
+curl http://localhost:3000/api/health
+curl -X POST http://localhost:3000/api/sharepoint/token
+curl http://localhost:3000/api/organization/secret
+```
+
+Le serveur redémarre automatiquement avec PM2.
+

@@ -1,0 +1,38 @@
+//
+//  AzureADConfig.template.txt
+//  RailSkills
+//
+//  TEMPLATE - Fichier de référence pour créer AzureADConfig.swift
+//  ⚠️ IMPORTANT : Ne versionnez JAMAIS AzureADConfig.swift dans Git !
+//
+//  INSTRUCTIONS :
+//  1. Créez un nouveau fichier Swift nommé "AzureADConfig.swift" dans ce dossier
+//  2. Copiez le code ci-dessous dans ce nouveau fichier
+//  3. Remplacez nil par votre Client Secret Azure AD entre guillemets
+//  4. Le fichier AzureADConfig.swift est déjà exclu de Git via .gitignore
+//  5. Compilez l'application
+//
+//  Le Client Secret sera automatiquement utilisé par l'application.
+//  Si le Client Secret n'est pas configuré, les utilisateurs pourront
+//  toujours le saisir manuellement dans les paramètres.
+//
+
+// Copiez le code ci-dessous dans AzureADConfig.swift :
+
+import Foundation
+
+/// Configuration Azure AD pour l'accès à SharePoint
+struct AzureADConfig {
+    /// Client Secret Azure AD fourni lors de l'inscription de l'application
+    /// Remplacez nil par votre Client Secret entre guillemets
+    static let clientSecret: String? = nil  // ← Remplacez nil par "VOTRE_CLIENT_SECRET"
+    
+    /// Tenant ID Azure AD (déjà configuré)
+    static let tenantId = "4a7c8238-5799-4b16-9fc6-9ad8fce5a7d9"
+    
+    /// App ID (Client ID) Azure AD (déjà configuré)
+    static let clientId = "bd394412-97bf-4513-a59f-e023b010dff7"
+    
+    /// Site SharePoint (déjà configuré)
+    static let sharePointSite = "sncf.sharepoint.com:/sites/railskillsgrpo365"
+}

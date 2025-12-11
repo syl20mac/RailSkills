@@ -1,0 +1,16 @@
+#include "Base.xcconfig"
+
+// Nom affiché sur l’écran
+APP_DISPLAY_NAME = Railskills (Debug)
+
+// Identifiant spécifique
+PRODUCT_BUNDLE_IDENTIFIER = com.monsite.monapp.debug
+
+// Optimisation
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+
+// URL API de dev
+BASE_API_URL = https://api.dev.monsite.com
+
+// Autres options utiles
+ENABLE_TESTABILITY = YES
