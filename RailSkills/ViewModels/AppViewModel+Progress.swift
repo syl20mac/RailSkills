@@ -31,7 +31,7 @@ extension AppViewModel {
         let key = cl.title
         let stateMap = store.drivers[selectedDriverIndex].checklistStates[key] ?? [:]
         
-        let checkedCount = questions.filter { stateMap[$0.id] == 2 }.count
+        let checkedCount = questions.filter { stateMap[$0.id.uuidString] == 2 }.count
         let result = Double(checkedCount) / Double(questions.count)
         
         cachedProgress = result

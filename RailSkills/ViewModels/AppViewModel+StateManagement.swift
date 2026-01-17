@@ -12,7 +12,7 @@ import Combine
 extension AppViewModel {
     
     /// Map d'état cachée pour les réponses aux questions
-    private func stateMap(for type: ChecklistType = .triennale) -> [UUID: Int] {
+    private func stateMap(for type: ChecklistType = .triennale) -> [String: Int] {
         guard let cl = checklist(for: type) else { return [:] }
         guard store.drivers.indices.contains(selectedDriverIndex) else { return [:] }
         
@@ -28,12 +28,12 @@ extension AppViewModel {
     
     /// Retourne l'état d'un élément (0=non validé, 1=partiel, 2=validé, 3=non traité)
     func state(for item: ChecklistItem, type: ChecklistType = .triennale) -> Int {
-        stateMap(for: type)[item.id] ?? 3  // Par défaut: Non traité
+        stateMap(for: type)[item.id.uuidString] ?? 3  // Par défaut: Non traité
     }
 
     /// Vérifie si un élément est complètement validé (état 2)
     func isChecked(_ item: ChecklistItem, type: ChecklistType = .triennale) -> Bool {
-        stateMap(for: type)[item.id] == 2
+        stateMap(for: type)[item.id.uuidString] == 2
     }
 
     /// Fait basculer l'état d'un élément entre les 4 valeurs possibles
@@ -52,7 +52,7 @@ extension AppViewModel {
         
         var driver = store.drivers[selectedDriverIndex]
         var map = driver.checklistStates[key] ?? [:]
-        let previousValue = map[item.id]
+        let previousValue = map[item.id.uuidString]
         
         // Vérifier si l'état a réellement changé
         guard previousValue != clampedValue else { return }
@@ -70,19 +70,17 @@ extension AppViewModel {
         }
         
         // Mettre à jour l'état
-        map[item.id] = clampedValue
+        map[item.id.uuidString] = clampedValue
         driver.checklistStates[key] = map
         driver.lastEvaluation = currentDate
         
         // Enregistrer la date de suivi de la question à chaque changement d'état
         var datesMap = driver.checklistDates[key] ?? [:]
-        datesMap[item.id] = currentDate
+        datesMap[item.id.uuidString] = currentDate
         driver.checklistDates[key] = datesMap
         
-        // Créer un nouveau tableau pour forcer le didSet à se déclencher
-        var updatedDrivers = store.drivers
-        updatedDrivers[selectedDriverIndex] = driver
-        store.drivers = updatedDrivers
+        // Mettre à jour directement le tableau (le store déclenchera les notifications et la sauvegarde)
+        store.drivers[selectedDriverIndex] = driver
         
         // Invalider le cache de progression
         cachedProgress = nil
@@ -99,7 +97,7 @@ extension AppViewModel {
         
         let key = cl.title
         let datesMap = store.drivers[selectedDriverIndex].checklistDates[key] ?? [:]
-        return datesMap[item.id]
+        return datesMap[item.id.uuidString]
     }
 
     /// Remet à zéro toutes les réponses de la checklist pour le conducteur sélectionné
@@ -110,10 +108,8 @@ extension AppViewModel {
         var driver = store.drivers[selectedDriverIndex]
         driver.checklistStates[key] = [:]
         
-        // Créer un nouveau tableau pour forcer le didSet à se déclencher
-        var updatedDrivers = store.drivers
-        updatedDrivers[selectedDriverIndex] = driver
-        store.drivers = updatedDrivers
+        // Mettre à jour directement le tableau
+        store.drivers[selectedDriverIndex] = driver
         
         cachedProgress = nil
         cachedStateMap = nil

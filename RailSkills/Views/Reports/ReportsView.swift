@@ -57,7 +57,8 @@ struct ReportsView: View {
                     HStack {
                         Image(systemName: "person")
                             .foregroundStyle(.blue)
-                        Text(vm.store.drivers[i].name)
+                        // Affiche le prénom et le nom du conducteur
+                        Text(vm.store.drivers[i].fullName)
                         Spacer()
                         if let start = vm.store.drivers[i].triennialStart,
                            let due = Calendar.current.date(byAdding: .year, value: AppConstants.Date.triennialYears, to: start) {

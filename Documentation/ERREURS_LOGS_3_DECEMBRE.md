@@ -191,3 +191,23 @@ Dans ces logs, **toutes les opérations critiques réussissent** :
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

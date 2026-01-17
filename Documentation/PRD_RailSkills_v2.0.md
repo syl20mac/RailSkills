@@ -9,7 +9,7 @@
 
 ## 0. Résumé exécutif
 
-RailSkills fournit aux **Manager Traction** et **Adjoints Référents Conduite (ARC)** un outil mobile pour piloter les suivis réglementaires des conducteurs SNCF circulant au Luxembourg. L'application, entièrement locale et synchronisable via iCloud, offre :
+RailSkills fournit aux **Cadres Transport Traction (CTT)** et **Adjoints Référents Conduite (ARC)** un outil mobile pour piloter les suivis réglementaires des conducteurs SNCF circulant au Luxembourg. L'application, entièrement locale et synchronisable via iCloud, offre :
 
 - Gestion complète des conducteurs et des échéances triennales.
 - Suivi détaillé des checklists dynamiques (importées via JSON/texte).
@@ -25,7 +25,7 @@ RailSkills fournit aux **Manager Traction** et **Adjoints Référents Conduite (
 
 1. Garantir la traçabilité réglementaire (suivis triennaux, signatures numériques futures).
 2. Centraliser les dossiers conducteurs sans dépendre d'un réseau externe.
-3. Simplifier la collaboration entre Manager Traction/ARC (imports/exports, QR codes, fusion intelligente).
+3. Simplifier la collaboration entre CTT/ARC (imports/exports, QR codes, fusion intelligente).
 4. Offrir une UX adaptée terrain : gestes rapides, filtres, mode sombre, accessibilité.
 5. Faciliter l'export de données pour traitement externe (Excel via CSV).
 
@@ -35,7 +35,7 @@ RailSkills fournit aux **Manager Traction** et **Adjoints Référents Conduite (
 
 | Rôle | Besoin | Valeur apportée |
 |------|--------|-----------------|
-| **Manager Traction** | suivre certifications, préparer contrôles | vue synthèse, export PDF/JSON/CSV, dashboard |
+| **CTT** | suivre certifications, préparer contrôles | vue synthèse, export PDF/JSON/CSV, dashboard |
 | **ARC** | réaliser suivis partagés, préparer supports | import QR, édition mobile, partage QR |
 | **Conducteurs** | accéder à leur progression via PDF | transparence, traçabilité |
 | **DSIT / Sécurité** | fiabilité, conformité, résilience | données locales, iCloud optionnel, chiffrement |

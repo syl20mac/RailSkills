@@ -9,17 +9,28 @@ import SwiftUI
 
 /// Vue de gestion des conducteurs (liste, édition, suppression)
 struct DriversManagerView: View {
+    enum ActiveSheet: Identifiable {
+        case addDriver
+        case editDriver(Int)
+        case importExcel
+        case importSharePoint
+        
+        var id: String {
+            switch self {
+            case .addDriver: return "addDriver"
+            case .editDriver(let index): return "editDriver-\(index)"
+            case .importExcel: return "importExcel"
+            case .importSharePoint: return "importSharePoint"
+            }
+        }
+    }
+
     @ObservedObject var vm: ViewModel
-    @State private var showingAddDriverSheet = false
+    @State private var currentSheet: ActiveSheet?
     @State private var selectedDriverIndex: Int?
     @State private var showingDeleteConfirmation = false
     @State private var pendingDeletionIDs: [UUID] = []
     @State private var searchText: String = ""
-    @State private var showingEditSheet = false
-    @State private var editingDriverIndex: Int?
-    @State private var showingImportExcelSheet = false
-    @State private var showingImportSharePointSheet = false
-    @State private var isImportingFromSharePoint = false
     
     /// Conducteurs filtrés par la recherche et triés par urgence
     private var filteredDrivers: [DriverRecord] {
@@ -59,9 +70,8 @@ struct DriversManagerView: View {
                     
                     VStack(spacing: 12) {
                         Button {
-                            // Fermer Excel si ouvert, puis ouvrir SharePoint
-                            showingImportExcelSheet = false
-                            showingImportSharePointSheet = true
+                            Logger.debug("Bouton Import SharePoint cliqué", category: "DriversManager")
+                            currentSheet = .importSharePoint
                         } label: {
                             HStack {
                                 Image(systemName: "tray.and.arrow.down")
@@ -73,11 +83,11 @@ struct DriversManagerView: View {
                             .foregroundStyle(.blue)
                             .cornerRadius(10)
                         }
+                        .buttonStyle(.borderless)
                         
                         Button {
-                            // Fermer SharePoint si ouvert, puis ouvrir Excel
-                            showingImportSharePointSheet = false
-                            showingImportExcelSheet = true
+                            Logger.debug("Bouton Import Excel cliqué", category: "DriversManager")
+                            currentSheet = .importExcel
                         } label: {
                             HStack {
                                 Image(systemName: "doc.badge.plus")
@@ -89,6 +99,7 @@ struct DriversManagerView: View {
                             .foregroundStyle(.orange)
                             .cornerRadius(10)
                         }
+                        .buttonStyle(.borderless)
                     }
                     .padding(.top, 8)
                 }
@@ -108,20 +119,11 @@ struct DriversManagerView: View {
                     .listRowBackground(Color.clear)
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         Button {
-                            editingDriverIndex = index
-                            showingEditSheet = true
+                            currentSheet = .editDriver(index)
                         } label: {
                             Label("Éditer", systemImage: "pencil")
                         }
                         .tint(.blue)
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            pendingDeletionIDs = [driver.id]
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Label("Supprimer", systemImage: "trash")
-                        }
                     }
                 }
             }
@@ -141,23 +143,19 @@ struct DriversManagerView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button {
-                        showingAddDriverSheet = true
+                        currentSheet = .addDriver
                     } label: {
                         Label("Ajouter un conducteur", systemImage: "person.badge.plus")
                     }
                     
                     Button {
-                        // Fermer SharePoint si ouvert, puis ouvrir Excel
-                        showingImportSharePointSheet = false
-                        showingImportExcelSheet = true
+                        currentSheet = .importExcel
                     } label: {
                         Label("Importer depuis Excel", systemImage: "doc.badge.plus")
                     }
                     
                     Button {
-                        // Fermer Excel si ouvert, puis ouvrir SharePoint
-                        showingImportExcelSheet = false
-                        showingImportSharePointSheet = true
+                        currentSheet = .importSharePoint
                     } label: {
                         Label("Importer depuis SharePoint", systemImage: "tray.and.arrow.down")
                     }
@@ -166,22 +164,25 @@ struct DriversManagerView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingAddDriverSheet) {
-            AddDriverSheet(vm: vm)
-        }
-        .sheet(isPresented: $showingEditSheet) {
-            if let index = editingDriverIndex, vm.store.drivers.indices.contains(index) {
-                NavigationStack {
-                    quickEditForm(for: index)
+        .sheet(item: $currentSheet) { sheet in
+            switch sheet {
+            case .addDriver:
+                AddDriverSheet(vm: vm)
+            case .editDriver(let index):
+                if vm.store.drivers.indices.contains(index) {
+                    NavigationStack {
+                        quickEditForm(for: index)
+                    }
+                    .presentationDetents([.medium, .large])
                 }
-                .presentationDetents([.medium, .large])
+            case .importExcel:
+                ImportDriversExcelView(vm: vm)
+            case .importSharePoint:
+                ImportDriversFromSharePointView(vm: vm, isPresented: Binding(
+                    get: { currentSheet?.id == ActiveSheet.importSharePoint.id },
+                    set: { if !$0 { currentSheet = nil } }
+                ))
             }
-        }
-        .sheet(isPresented: $showingImportExcelSheet) {
-            ImportDriversExcelView(vm: vm)
-        }
-        .sheet(isPresented: $showingImportSharePointSheet) {
-            ImportDriversFromSharePointView(vm: vm, isPresented: $showingImportSharePointSheet)
         }
         // Alerte de confirmation avant de supprimer un ou plusieurs conducteurs
         .alert("Confirmer la suppression", isPresented: $showingDeleteConfirmation) {
@@ -192,12 +193,10 @@ struct DriversManagerView: View {
                 guard !pendingDeletionIDs.isEmpty else { return }
                 let idsToRemove = Set(pendingDeletionIDs)
                 pendingDeletionIDs.removeAll()
-                
-                // Utiliser la fonction du ViewModel qui gère la suppression locale ET SharePoint
-                vm.deleteDrivers(byIds: idsToRemove)
-                
+                vm.store.drivers.removeAll { driver in
+                    idsToRemove.contains(driver.id)
+                }
                 Logger.warning("Conducteur(s) supprimé(s) après confirmation: \(idsToRemove.count)", category: "DriversManager")
-                
                 // Ajuster l'index sélectionné si nécessaire après suppression
                 if vm.store.drivers.isEmpty {
                     vm.selectedDriverIndex = 0
@@ -282,12 +281,53 @@ struct DriversManagerView: View {
     }
     
     private func driverDetailView(for index: Int) -> some View {
-        DriverDetailView(
-            vm: vm,
-            driverIndex: index,
-            pendingDeletionIDs: $pendingDeletionIDs,
-            showingDeleteConfirmation: $showingDeleteConfirmation
-        )
+        Form {
+            Section {
+                TextField("Nom *", text: Binding(
+                    get: { vm.store.drivers[index].name },
+                    set: { 
+                        let trimmedName = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if ValidationService.validateDriverName(trimmedName) {
+                            vm.store.drivers[index].name = trimmedName
+                        } else {
+                            Logger.warning("Nom de conducteur invalide lors de l'édition: \(trimmedName)", category: "DriversManager")
+                        }
+                    }
+                ))
+                
+                TextField("Prénom", text: Binding(
+                    get: { vm.store.drivers[index].firstName ?? "" },
+                    set: { 
+                        let trimmedFirstName = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                        vm.store.drivers[index].firstName = trimmedFirstName.isEmpty ? nil : trimmedFirstName
+                    }
+                ))
+                
+                TextField("Numéro de CP", text: Binding(
+                    get: { vm.store.drivers[index].cpNumber ?? "" },
+                    set: { 
+                        let trimmedCpNumber = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                        vm.store.drivers[index].cpNumber = trimmedCpNumber.isEmpty ? nil : trimmedCpNumber
+                    }
+                ))
+                
+                DatePicker(
+                    "Début triennale",
+                    selection: Binding(
+                        get: { vm.store.drivers[index].triennialStart ?? Date() },
+                        set: { vm.store.drivers[index].triennialStart = $0 }
+                    ),
+                    displayedComponents: .date
+                )
+            } header: {
+                Text("Informations")
+            } footer: {
+                Text("Les champs marqués d'un astérisque (*) sont obligatoires.")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+            }
+        }
+        .navigationTitle(vm.store.drivers[index].fullName)
     }
     
     private func urgency(of driver: DriverRecord) -> Int {
@@ -309,14 +349,7 @@ struct DriversManagerView: View {
         let cal = Calendar.current
         let startDay = cal.startOfDay(for: Date())
         let endDay = cal.startOfDay(for: due)
-        let days = cal.dateComponents([.day], from: startDay, to: endDay).day ?? 0
-        
-        // Log de diagnostic pour les dates suspectes (jours négatifs très élevés)
-        if days < -1000 {
-            Logger.warning("⚠️ Date suspecte détectée - Début: \(start), Échéance: \(due), Jours: \(days)", category: "DriversManager")
-        }
-        
-        return days
+        return cal.dateComponents([.day], from: startDay, to: endDay).day ?? 0
     }
     
     private func statusColor(forDays days: Int) -> Color {
@@ -390,134 +423,9 @@ struct DriversManagerView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("OK") {
-                    showingEditSheet = false
+                    currentSheet = nil
                 }
                 .fontWeight(.semibold)
-            }
-        }
-    }
-}
-
-// MARK: - Vue de détail du conducteur
-
-/// Vue de détail d'un conducteur avec fermeture automatique après suppression
-private struct DriverDetailView: View {
-    @ObservedObject var vm: ViewModel
-    let driverIndex: Int
-    @Binding var pendingDeletionIDs: [UUID]
-    @Binding var showingDeleteConfirmation: Bool
-    @Environment(\.dismiss) private var dismiss
-    
-    // Vérifier que le conducteur existe toujours
-    private var driverExists: Bool {
-        vm.store.drivers.indices.contains(driverIndex)
-    }
-    
-    var body: some View {
-        Group {
-            if driverExists {
-                Form {
-                    Section {
-                        TextField("Nom *", text: Binding(
-                            get: { vm.store.drivers[driverIndex].name },
-                            set: { 
-                                let trimmedName = $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                                if ValidationService.validateDriverName(trimmedName) {
-                                    vm.store.drivers[driverIndex].name = trimmedName
-                                } else {
-                                    Logger.warning("Nom de conducteur invalide lors de l'édition: \(trimmedName)", category: "DriversManager")
-                                }
-                            }
-                        ))
-                        
-                        TextField("Prénom", text: Binding(
-                            get: { vm.store.drivers[driverIndex].firstName ?? "" },
-                            set: { 
-                                let trimmedFirstName = $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                                vm.store.drivers[driverIndex].firstName = trimmedFirstName.isEmpty ? nil : trimmedFirstName
-                            }
-                        ))
-                        
-                        TextField("Numéro de CP", text: Binding(
-                            get: { vm.store.drivers[driverIndex].cpNumber ?? "" },
-                            set: { 
-                                let trimmedCpNumber = $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                                vm.store.drivers[driverIndex].cpNumber = trimmedCpNumber.isEmpty ? nil : trimmedCpNumber
-                            }
-                        ))
-                        
-                        DatePicker(
-                            "Début triennale",
-                            selection: Binding(
-                                get: { vm.store.drivers[driverIndex].triennialStart ?? Date() },
-                                set: { vm.store.drivers[driverIndex].triennialStart = $0 }
-                            ),
-                            displayedComponents: .date
-                        )
-                    } header: {
-                        Text("Informations")
-                    } footer: {
-                        Text("Les champs marqués d'un astérisque (*) sont obligatoires.")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                    }
-                    
-                    Section {
-                        Button(role: .destructive) {
-                            pendingDeletionIDs = [vm.store.drivers[driverIndex].id]
-                            showingDeleteConfirmation = true
-                        } label: {
-                            HStack {
-                                Spacer()
-                                Label("Supprimer le conducteur", systemImage: "trash")
-                                Spacer()
-                            }
-                        }
-                    }
-                }
-                .navigationTitle(vm.store.drivers[driverIndex].fullName)
-                .alert("Confirmer la suppression", isPresented: $showingDeleteConfirmation) {
-                    Button("Annuler", role: .cancel) {
-                        pendingDeletionIDs.removeAll()
-                    }
-                    Button("Supprimer", role: .destructive) {
-                        guard !pendingDeletionIDs.isEmpty else { return }
-                        let idsToRemove = Set(pendingDeletionIDs)
-                        pendingDeletionIDs.removeAll()
-                        
-                        // Utiliser la fonction du ViewModel qui gère la suppression locale ET SharePoint
-                        vm.deleteDrivers(byIds: idsToRemove)
-                        
-                        Logger.warning("Conducteur supprimé depuis la vue de détail", category: "DriversManager")
-                        
-                        // Ajuster l'index sélectionné si nécessaire après suppression
-                        if vm.store.drivers.isEmpty {
-                            vm.selectedDriverIndex = 0
-                        } else if !vm.store.drivers.indices.contains(vm.selectedDriverIndex) {
-                            vm.selectedDriverIndex = max(0, vm.store.drivers.count - 1)
-                        }
-                        
-                        // Fermer la vue après suppression
-                        dismiss()
-                    }
-                } message: {
-                    if let driver = vm.store.drivers.first(where: { $0.id == pendingDeletionIDs.first }) {
-                        Text("Voulez-vous supprimer le conducteur \"\(driver.name)\" ? Cette action est irréversible.")
-                    } else {
-                        Text("Voulez-vous supprimer ce conducteur ? Cette action est irréversible.")
-                    }
-                }
-            } else {
-                // Le conducteur n'existe plus, fermer automatiquement la vue
-                ContentUnavailableView(
-                    "Conducteur supprimé",
-                    systemImage: "person.slash",
-                    description: Text("Ce conducteur a été supprimé.")
-                )
-                .onAppear {
-                    // Fermer la vue si le conducteur n'existe plus
-                    dismiss()
-                }
             }
         }
     }

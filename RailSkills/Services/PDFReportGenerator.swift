@@ -104,7 +104,7 @@ enum PDFReportGenerator {
                     let questions = cl.questions
                     let key = cl.title
                     let map = driver.checklistStates[key] ?? [:]
-                    let checked = questions.filter { map[$0.id] == 2 }.count
+                    let checked = questions.filter { map[$0.id.uuidString] == 2 }.count
                     progressPercent = questions.isEmpty ? 0 : Int((Double(checked) / Double(questions.count)) * 100)
                 }
                 cursorY += draw(text: "Progression globale: \(progressPercent)%", at: CGPoint(x: contentRect.minX, y: cursorY), font: bodyFont)
@@ -183,7 +183,7 @@ enum PDFReportGenerator {
                         } else {
                             let key = cl.title
                             let map = driver.checklistStates[key] ?? [:]
-                            let s = map[item.id] ?? 0
+                            let s = map[item.id.uuidString] ?? 0
                             let mark: String
                             switch s {
                             case 3: mark = "⊘ Non applicable"
@@ -195,13 +195,13 @@ enum PDFReportGenerator {
                             cursorY += draw(text: line, at: CGPoint(x: contentRect.minX + 8, y: cursorY), font: bodyFont)
                             
                             // Afficher la date de suivi si disponible
-                            if let evalDate = datesMap[item.id] {
+                            if let evalDate = datesMap[item.id.uuidString] {
                                 let dateText = "   Suivi le \(DateFormatHelper.formatDate(evalDate))"
                                 let dateHeight = draw(text: dateText, at: CGPoint(x: contentRect.minX + 16, y: cursorY + 6), font: captionFont, color: .secondaryLabel)
                                 cursorY += dateHeight + 2
                             }
                             
-                            if let note = notesMap[item.id], !note.isEmpty {
+                            if let note = notesMap[item.id.uuidString], !note.isEmpty {
                                 let noteText = "   Note: \(note)"
                                 let noteHeight = draw(text: noteText, at: CGPoint(x: contentRect.minX + 16, y: cursorY + 6), font: captionFont, color: .secondaryLabel)
                                 cursorY += noteHeight + 4
@@ -225,10 +225,10 @@ enum PDFReportGenerator {
                     let questions = cl.questions
                     let key = cl.title
                     let map = driver.checklistStates[key] ?? [:]
-                    let validated = questions.filter { map[$0.id] == 2 }.count
-                    let partial = questions.filter { map[$0.id] == 1 }.count
-                    let notValidated = questions.filter { map[$0.id] == 0 }.count
-                    let notApplicable = questions.filter { map[$0.id] == 3 }.count
+                    let validated = questions.filter { map[$0.id.uuidString] == 2 }.count
+                    let partial = questions.filter { map[$0.id.uuidString] == 1 }.count
+                    let notValidated = questions.filter { map[$0.id.uuidString] == 0 }.count
+                    let notApplicable = questions.filter { map[$0.id.uuidString] == 3 }.count
                     let total = questions.count
                     
                     cursorY += draw(text: "Total de questions: \(total)", at: CGPoint(x: contentRect.minX, y: cursorY), font: bodyFont)
@@ -257,7 +257,7 @@ enum PDFReportGenerator {
                                 if let catId = currentCategoryId {
                                     let categoryQuestions = categoryItems
                                     let categoryTotal = categoryQuestions.count
-                                    let categoryValidated = categoryQuestions.filter { map[$0.id] == 2 }.count
+                                    let categoryValidated = categoryQuestions.filter { map[$0.id.uuidString] == 2 }.count
                                     let categoryPercent = categoryTotal > 0 ? Int((Double(categoryValidated) / Double(categoryTotal)) * 100) : 0
                                     if let catItem = cl.items.first(where: { $0.id == catId }) {
                                         cursorY += draw(text: "• \(catItem.title): \(categoryValidated)/\(categoryTotal) (\(categoryPercent)%)", at: CGPoint(x: contentRect.minX + 20, y: cursorY), font: captionFont)
@@ -274,7 +274,7 @@ enum PDFReportGenerator {
                         // Dernière catégorie
                         if let catId = currentCategoryId, !categoryItems.isEmpty {
                             let categoryTotal = categoryItems.count
-                            let categoryValidated = categoryItems.filter { map[$0.id] == 2 }.count
+                            let categoryValidated = categoryItems.filter { map[$0.id.uuidString] == 2 }.count
                             let categoryPercent = categoryTotal > 0 ? Int((Double(categoryValidated) / Double(categoryTotal)) * 100) : 0
                             if let catItem = cl.items.first(where: { $0.id == catId }) {
                                 cursorY += draw(text: "• \(catItem.title): \(categoryValidated)/\(categoryTotal) (\(categoryPercent)%)", at: CGPoint(x: contentRect.minX + 20, y: cursorY), font: captionFont)

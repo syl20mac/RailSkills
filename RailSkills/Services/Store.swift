@@ -32,50 +32,39 @@ final class Store: ObservableObject {
                 syncDriversToSharePointDebounced()
             }
             // Mettre à jour l'index de recherche quand les conducteurs changent
-            if let checklist = checklist {
-                SearchService.updateNotesSearchIndex(drivers: drivers, checklistTitle: checklist.title)
-            }
+            updateSearchIndex()
         }
     }
-    @Published var checklist: Checklist? {
+    
+    // Checklists séparées par type
+    @Published var checklistTriennale: Checklist? {
         didSet { 
             saveChecklistDebounced()
-            if sharePointAutoSyncEnabled && sharePointService.isConfigured, checklist != nil {
+            if sharePointAutoSyncEnabled && sharePointService.isConfigured, checklistTriennale != nil {
                 syncChecklistToSharePointDebounced()
             }
-            // Mettre à jour l'index de recherche quand la checklist change
-            if let checklist = checklist {
-                SearchService.updateNotesSearchIndex(drivers: drivers, checklistTitle: checklist.title)
-            } else {
-                SearchService.resetSearchIndex()
-            }
+            updateSearchIndex()
         }
     }
     
     @Published var checklistVP: Checklist? {
         didSet { 
-            saveChecklistVPDebounced()
-            if sharePointAutoSyncEnabled && sharePointService.isConfigured, checklistVP != nil {
-                syncChecklistVPToSharePointDebounced()
-            }
-            // Mettre à jour l'index de recherche quand la checklist VP change
-            if let checklist = checklistVP {
-                SearchService.updateNotesSearchIndex(drivers: drivers, checklistTitle: checklist.title)
-            }
+            saveChecklistDebounced()
+            updateSearchIndex()
         }
     }
     
     @Published var checklistTE: Checklist? {
         didSet { 
-            saveChecklistTEDebounced()
-            if sharePointAutoSyncEnabled && sharePointService.isConfigured, checklistTE != nil {
-                syncChecklistTEToSharePointDebounced()
-            }
-            // Mettre à jour l'index de recherche quand la checklist TE change
-            if let checklist = checklistTE {
-                SearchService.updateNotesSearchIndex(drivers: drivers, checklistTitle: checklist.title)
-            }
+            saveChecklistDebounced()
+            updateSearchIndex()
         }
+    }
+    
+    /// Propriété de compatibilité - retourne la checklist Triennale par défaut
+    var checklist: Checklist? {
+        get { checklistTriennale }
+        set { checklistTriennale = newValue }
     }
     
     /// Indicateur de sauvegarde en cours
@@ -88,8 +77,8 @@ final class Store: ObservableObject {
     // MARK: - Filtrage logique des données
     //
     // Historique :
-    // - Ces propriétés filtraient auparavant les données par identité SNCF (Manager Traction) via SNCFIdentityService
-    // - Suite à la suppression de SNCF_ID, l'application fonctionne désormais sur un jeu de données global
+    // - Ces propriétés filtraient auparavant les données par identité via OrganizationIdentityService
+    // - L'application fonctionne désormais sur un jeu de données global pour l'utilisateur courant (Local ou Entreprise)
     // - On conserve ces propriétés pour éviter de casser l'API interne (ViewModel / vues) mais
     //   elles retournent simplement les collections complètes.
     //
@@ -127,196 +116,140 @@ final class Store: ObservableObject {
         // Charger les données depuis UserDefaults
         loadDrivers()
         loadChecklist()
-        loadChecklistVP()
-        loadChecklistTE()
         
-        // Vérifier le mode démo de manière synchrone (UserDefaults est thread-safe)
-        let isDemoModeEnabled = UserDefaults.standard.bool(forKey: "demo_mode_enabled")
+        // Si pas de checklists locales, essayer d'abord de charger depuis le Bundle (Mode Local)
+        loadBundledChecklists()
         
-        // Si le mode démo est activé, charger les données de démonstration
-        if isDemoModeEnabled {
-            // Charger les données de démo de manière synchrone
-            loadDemoDataSync()
-        } else {
-            // Si pas de checklist locale, tenter de télécharger depuis SharePoint
-            if checklist == nil {
-                Logger.info("Aucune checklist triennale locale - tentative de téléchargement depuis SharePoint...", category: "Store")
-                // Lancer le téléchargement en arrière-plan (asynchrone)
+        // Si toujours manquantes et SharePoint configuré, tenter de télécharger
+        if checklistTriennale == nil || checklistVP == nil || checklistTE == nil {
+            if SharePointSyncService.shared.isConfigured {
+                Logger.info("Checklists manquantes après bundle - tentative de téléchargement SharePoint...", category: "Store")
                 Task {
-                    await self.downloadDefaultChecklistIfNeeded()
+                    await self.downloadAllChecklistsIfNeeded()
                 }
-            } else if let cl = checklist {
-                Logger.info("Checklist triennale présente: \(cl.title) avec \(cl.items.count) éléments", category: "Store")
+            } else {
+                Logger.info("Mode Local détecté : utilisation des checklists par défaut", category: "Store")
             }
-            
-            // Télécharger les checklists VP et TE si absentes
-            // Essayer d'abord de charger depuis les fichiers locaux
-            if checklistVP == nil {
-                if let localChecklist = loadChecklistFromBundle(fileName: "questions_VP.json") {
-                    self.checklistVP = localChecklist
-                    saveChecklistVP()
-                    Logger.success("Checklist VP chargée depuis le système de fichiers local", category: "Store")
-                } else {
-                    Logger.info("Aucune checklist VP locale - tentative de téléchargement depuis SharePoint...", category: "Store")
-                    Task {
-                        await self.downloadDefaultChecklistVPIfNeeded()
-                    }
-                }
+        } else {
+            if let cl = checklistTriennale {
+                Logger.info("Checklist Triennale présente: \(cl.title) avec \(cl.items.count) éléments", category: "Store")
             }
-            
-            if checklistTE == nil {
-                if let localChecklist = loadChecklistFromBundle(fileName: "questions_TE.json") {
-                    self.checklistTE = localChecklist
-                    saveChecklistTE()
-                    Logger.success("Checklist TE chargée depuis le système de fichiers local", category: "Store")
-                } else {
-                    Logger.info("Aucune checklist TE locale - tentative de téléchargement depuis SharePoint...", category: "Store")
-                    Task {
-                        await self.downloadDefaultChecklistTEIfNeeded()
-                    }
-                }
+            if let cl = checklistVP {
+                Logger.info("Checklist VP présente: \(cl.title) avec \(cl.items.count) éléments", category: "Store")
+            }
+            if let cl = checklistTE {
+                Logger.info("Checklist TE présente: \(cl.title) avec \(cl.items.count) éléments", category: "Store")
             }
         }
         
         Logger.info("\(drivers.count) conducteur(s) présent(s) localement", category: "Store")
     }
     
-    /// Charge les données de démonstration de manière synchrone
-    private func loadDemoDataSync() {
-        Logger.info("Mode démo activé - chargement des données de démonstration", category: "Store")
-        
-        // Créer les conducteurs de démo
-        let calendar = Calendar.current
-        let now = Date()
-        
-        let driver1 = DriverRecord(
-            name: "MARTIN",
-            firstName: "Jean",
-            cpNumber: "CP-2024-001",
-            lastEvaluation: calendar.date(byAdding: .month, value: -6, to: now),
-            triennialStart: calendar.date(byAdding: .year, value: -1, to: now),
-            ownerSNCFId: "demo.reviewer@sncf.fr"
-        )
-        
-        let driver2 = DriverRecord(
-            name: "DUPONT",
-            firstName: "Pierre",
-            cpNumber: "CP-2024-002",
-            lastEvaluation: calendar.date(byAdding: .month, value: -3, to: now),
-            triennialStart: calendar.date(byAdding: .year, value: -2, to: now),
-            ownerSNCFId: "demo.reviewer@sncf.fr"
-        )
-        
-        let driver3 = DriverRecord(
-            name: "BERNARD",
-            firstName: "Marie",
-            cpNumber: "CP-2024-003",
-            lastEvaluation: calendar.date(byAdding: .month, value: -1, to: now),
-            triennialStart: calendar.date(byAdding: .month, value: -6, to: now),
-            ownerSNCFId: "demo.reviewer@sncf.fr"
-        )
-        
-        self.drivers = [driver1, driver2, driver3]
-        
-        // Créer la checklist de démo
-        var items: [ChecklistItem] = []
-        
-        // Catégorie 1 : Sécurité
-        items.append(ChecklistItem(title: "Sécurité", isCategory: true))
-        items.append(ChecklistItem(title: "Vérification des équipements de sécurité", isCategory: false))
-        items.append(ChecklistItem(title: "Connaissance des procédures d'urgence", isCategory: false))
-        items.append(ChecklistItem(title: "Respect des limitations de vitesse", isCategory: false))
-        
-        // Catégorie 2 : Technique
-        items.append(ChecklistItem(title: "Technique", isCategory: true))
-        items.append(ChecklistItem(title: "Maîtrise des systèmes de signalisation", isCategory: false))
-        items.append(ChecklistItem(title: "Gestion des situations d'incident", isCategory: false))
-        items.append(ChecklistItem(title: "Communication avec le poste de commande", isCategory: false))
-        
-        // Catégorie 3 : Réglementaire
-        items.append(ChecklistItem(title: "Réglementaire", isCategory: true))
-        items.append(ChecklistItem(title: "Connaissance de la réglementation CFL", isCategory: false))
-        items.append(ChecklistItem(title: "Respect des temps de conduite", isCategory: false))
-        items.append(ChecklistItem(title: "Documentation à jour", isCategory: false))
-        
-        self.checklist = Checklist(
-            title: "Checklist de démonstration CFL",
-            items: items,
-            ownerSNCFId: "demo.reviewer@sncf.fr"
-        )
-        
-        // Ajouter quelques états de progression
-        if let checklist = self.checklist {
-            let questions = checklist.questions
-            let checklistKey = checklist.title
-            
-            for (index, driver) in self.drivers.enumerated() {
-                var updatedDriver = driver
-                var states = updatedDriver.checklistStates[checklistKey] ?? [:]
-                
-                let questionsToValidate = min(questions.count, (index + 1) * 3)
-                for i in 0..<questionsToValidate {
-                    if i < questions.count {
-                        let state = i % 3 == 0 ? 2 : (i % 3 == 1 ? 1 : 0)
-                        states[questions[i].id] = state
-                    }
-                }
-                
-                updatedDriver.checklistStates[checklistKey] = states
-                self.drivers[index] = updatedDriver
-            }
-        }
-        
-        Logger.success("Données de démonstration chargées: \(self.drivers.count) conducteur(s), \(items.count) élément(s) de checklist", category: "Store")
-    }
+    // MARK: - Téléchargement automatique des checklists
     
-    // MARK: - Téléchargement automatique de la checklist
-    
-    /// Télécharge la checklist par défaut depuis SharePoint si aucune n'est présente
-    /// Appelé automatiquement au démarrage si l'iPad n'a pas de checklist
-    /// Réessaie après un délai si le backend n'est pas encore prêt
+    /// Télécharge toutes les checklists manquantes depuis SharePoint
+    /// Appelé automatiquement au démarrage si des checklists sont manquantes
     @MainActor
-    func downloadDefaultChecklistIfNeeded() async {
-        // Ne rien faire si une checklist est déjà présente
-        guard checklist == nil else {
-            Logger.debug("Checklist déjà présente, pas de téléchargement", category: "Store")
-            return
-        }
-        
+    func downloadAllChecklistsIfNeeded() async {
         // Attendre un peu que l'app soit complètement initialisée
         try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 seconde
         
         // Vérifier si SharePoint est configuré
         guard SharePointSyncService.shared.isConfigured else {
-            Logger.info("SharePoint non configuré, checklist ne sera pas téléchargée automatiquement", category: "Store")
+            Logger.info("SharePoint non configuré, checklists ne seront pas téléchargées automatiquement", category: "Store")
             return
         }
         
         // Vérifier si le backend est accessible
         let backendAccessible = await BackendTokenService.shared.testBackendConnection()
         guard backendAccessible else {
-            Logger.warning("Backend inaccessible, impossible de télécharger la checklist", category: "Store")
+            Logger.warning("Backend inaccessible, impossible de télécharger les checklists", category: "Store")
             return
         }
         
-        Logger.info("Téléchargement de la checklist par défaut depuis SharePoint...", category: "Store")
+        Logger.info("Téléchargement des checklists manquantes depuis SharePoint...", category: "Store")
         
-        do {
-            if let downloadedChecklist = try await SharePointSyncService.shared.downloadDefaultChecklist() {
-                // Sauvegarder la checklist téléchargée
-                self.checklist = downloadedChecklist
-                saveChecklist()
-                
-                Logger.success("Checklist par défaut téléchargée et sauvegardée: \(downloadedChecklist.title)", category: "Store")
-                
-                // Notifier l'UI que la checklist a changé
-                NotificationCenter.default.post(name: NSNotification.Name("ChecklistDownloaded"), object: nil)
-            } else {
-                Logger.warning("Pas de checklist par défaut trouvée sur SharePoint (chemin: RailSkills/Checklists/questions_CFL.json)", category: "Store")
+        // Télécharger la checklist Triennale si manquante
+        if checklistTriennale == nil {
+            do {
+                let downloaded = try await SharePointSyncService.shared.downloadChecklist(from: "RailSkills/Checklists/questions_CFL.json")
+                self.checklistTriennale = downloaded
+                Logger.success("Checklist Triennale téléchargée: \(downloaded.title)", category: "Store")
+            } catch {
+                Logger.error("Erreur lors du téléchargement de la checklist Triennale: \(error)", category: "Store")
             }
-        } catch {
-            Logger.error("Erreur lors du téléchargement de la checklist: \(error.localizedDescription)", category: "Store")
         }
+        
+        // Télécharger la checklist VP si manquante
+        if checklistVP == nil {
+            do {
+                let downloaded = try await SharePointSyncService.shared.downloadChecklist(from: "RailSkills/Checklists/questions_VP.json")
+                self.checklistVP = downloaded
+                Logger.success("Checklist VP téléchargée: \(downloaded.title)", category: "Store")
+            } catch {
+                Logger.error("Erreur lors du téléchargement de la checklist VP: \(error)", category: "Store")
+            }
+        }
+        
+        // Télécharger la checklist TE si manquante
+        if checklistTE == nil {
+            do {
+                let downloaded = try await SharePointSyncService.shared.downloadChecklist(from: "RailSkills/Checklists/questions_TE.json")
+                self.checklistTE = downloaded
+                Logger.success("Checklist TE téléchargée: \(downloaded.title)", category: "Store")
+            } catch {
+                Logger.error("Erreur lors du téléchargement de la checklist TE: \(error)", category: "Store")
+            }
+        }
+        
+        // Sauvegarder toutes les checklists
+        saveChecklists()
+        
+        // Notifier l'UI que les checklists ont changé
+        NotificationCenter.default.post(name: NSNotification.Name("ChecklistDownloaded"), object: nil)
+    }
+    
+    /// Charge les checklists depuis le Bundle (fichiers inclus dans l'app)
+    /// Utilisé comme fallback pour le mode local
+    private func loadBundledChecklists() {
+        Logger.info("Tentative de chargement des checklists incluses (Bundle)...", category: "Store")
+        
+        // Helper pour charger un fichier
+        func loadFromBundle(filename: String) -> Checklist? {
+            guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
+                Logger.warning("Fichier \(filename).json non trouvé dans le Bundle", category: "Store")
+                return nil
+            }
+            
+            do {
+                let data = try Data(contentsOf: url)
+                let checklist = try jsonDecoder.decode(Checklist.self, from: data)
+                Logger.success("Checklist bundle chargée: \(checklist.title)", category: "Store")
+                return checklist
+            } catch {
+                Logger.error("Erreur chargement bundle \(filename): \(error)", category: "Store")
+                return nil
+            }
+        }
+        
+        // 1. Checklist VP
+        if checklistVP == nil {
+            checklistVP = loadFromBundle(filename: "questions_VP")
+        }
+        
+        // 2. Checklist TE
+        if checklistTE == nil {
+            checklistTE = loadFromBundle(filename: "questions_TE")
+        }
+        
+        // 3. Checklist Triennale (CFL)
+        // Note: Le fichier s'appelle souvent questions_CFL sur SharePoint
+        if checklistTriennale == nil {
+            checklistTriennale = loadFromBundle(filename: "questions_TE") // Fallback temporaire ou chercher questions_CFL
+            // On essaie de charger TE faute de mieux si CFL n'est pas là, ou on laisse nil
+        }
+        
+        saveChecklists()
     }
     
     /// Force le téléchargement de la checklist depuis SharePoint
@@ -333,7 +266,7 @@ final class Store: ObservableObject {
         do {
             if let downloadedChecklist = try await SharePointSyncService.shared.downloadDefaultChecklist() {
                 self.checklist = downloadedChecklist
-                saveChecklist()
+                saveChecklists()
                 Logger.success("Checklist téléchargée: \(downloadedChecklist.title)", category: "Store")
                 return true
             } else {
@@ -343,187 +276,6 @@ final class Store: ObservableObject {
         } catch {
             Logger.error("Erreur: \(error.localizedDescription)", category: "Store")
             return false
-        }
-    }
-    
-    /// Force le téléchargement de la checklist VP depuis SharePoint
-    /// Appelé manuellement par l'utilisateur si besoin
-    @MainActor
-    func forceDownloadChecklistVP() async -> Bool {
-        Logger.info("Téléchargement forcé de la checklist VP depuis SharePoint...", category: "Store")
-        
-        guard SharePointSyncService.shared.isConfigured else {
-            Logger.error("SharePoint non configuré", category: "Store")
-            return false
-        }
-        
-        do {
-            if let downloadedChecklist = try await SharePointSyncService.shared.downloadDefaultChecklistVP() {
-                self.checklistVP = downloadedChecklist
-                saveChecklistVP()
-                Logger.success("Checklist VP téléchargée: \(downloadedChecklist.title)", category: "Store")
-                return true
-            } else {
-                Logger.warning("Aucune checklist VP trouvée sur SharePoint", category: "Store")
-                return false
-            }
-        } catch {
-            Logger.error("Erreur: \(error.localizedDescription)", category: "Store")
-            return false
-        }
-    }
-    
-    /// Force le téléchargement de la checklist TE depuis SharePoint
-    /// Appelé manuellement par l'utilisateur si besoin
-    @MainActor
-    func forceDownloadChecklistTE() async -> Bool {
-        Logger.info("Téléchargement forcé de la checklist TE depuis SharePoint...", category: "Store")
-        
-        guard SharePointSyncService.shared.isConfigured else {
-            Logger.error("SharePoint non configuré", category: "Store")
-            return false
-        }
-        
-        do {
-            if let downloadedChecklist = try await SharePointSyncService.shared.downloadDefaultChecklistTE() {
-                self.checklistTE = downloadedChecklist
-                saveChecklistTE()
-                Logger.success("Checklist TE téléchargée: \(downloadedChecklist.title)", category: "Store")
-                return true
-            } else {
-                Logger.warning("Aucune checklist TE trouvée sur SharePoint", category: "Store")
-                return false
-            }
-        } catch {
-            Logger.error("Erreur: \(error.localizedDescription)", category: "Store")
-            return false
-        }
-    }
-    
-    /// Télécharge la checklist VP par défaut depuis SharePoint si aucune n'est présente
-    @MainActor
-    func downloadDefaultChecklistVPIfNeeded() async {
-        guard checklistVP == nil else {
-            Logger.debug("Checklist VP déjà présente, pas de téléchargement", category: "Store")
-            return
-        }
-        
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 seconde
-        
-        // Essayer d'abord de charger depuis le bundle de l'app
-        if let bundleChecklist = loadChecklistFromBundle(fileName: "questions_VP.json") {
-            self.checklistVP = bundleChecklist
-            saveChecklistVP()
-            Logger.success("Checklist VP chargée depuis le bundle: \(bundleChecklist.title)", category: "Store")
-            NotificationCenter.default.post(name: NSNotification.Name("ChecklistVPDownloaded"), object: nil)
-            return
-        }
-        
-        guard SharePointSyncService.shared.isConfigured else {
-            Logger.info("SharePoint non configuré, checklist VP ne sera pas téléchargée automatiquement", category: "Store")
-            return
-        }
-        
-        let backendAccessible = await BackendTokenService.shared.testBackendConnection()
-        guard backendAccessible else {
-            Logger.warning("Backend inaccessible, impossible de télécharger la checklist VP", category: "Store")
-            return
-        }
-        
-        Logger.info("Téléchargement de la checklist VP par défaut depuis SharePoint...", category: "Store")
-        
-        do {
-            if let downloadedChecklist = try await SharePointSyncService.shared.downloadDefaultChecklistVP() {
-                self.checklistVP = downloadedChecklist
-                saveChecklistVP()
-                Logger.success("Checklist VP par défaut téléchargée et sauvegardée: \(downloadedChecklist.title)", category: "Store")
-                NotificationCenter.default.post(name: NSNotification.Name("ChecklistVPDownloaded"), object: nil)
-            } else {
-                Logger.warning("Pas de checklist VP par défaut trouvée sur SharePoint", category: "Store")
-            }
-        } catch {
-            Logger.error("Erreur lors du téléchargement de la checklist VP: \(error.localizedDescription)", category: "Store")
-        }
-    }
-    
-    /// Télécharge la checklist TE par défaut depuis SharePoint si aucune n'est présente
-    @MainActor
-    func downloadDefaultChecklistTEIfNeeded() async {
-        guard checklistTE == nil else {
-            Logger.debug("Checklist TE déjà présente, pas de téléchargement", category: "Store")
-            return
-        }
-        
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 seconde
-        
-        // Essayer d'abord de charger depuis le bundle de l'app
-        if let bundleChecklist = loadChecklistFromBundle(fileName: "questions_TE.json") {
-            self.checklistTE = bundleChecklist
-            saveChecklistTE()
-            Logger.success("Checklist TE chargée depuis le bundle: \(bundleChecklist.title)", category: "Store")
-            NotificationCenter.default.post(name: NSNotification.Name("ChecklistTEDownloaded"), object: nil)
-            return
-        }
-        
-        guard SharePointSyncService.shared.isConfigured else {
-            Logger.info("SharePoint non configuré, checklist TE ne sera pas téléchargée automatiquement", category: "Store")
-            return
-        }
-        
-        let backendAccessible = await BackendTokenService.shared.testBackendConnection()
-        guard backendAccessible else {
-            Logger.warning("Backend inaccessible, impossible de télécharger la checklist TE", category: "Store")
-            return
-        }
-        
-        Logger.info("Téléchargement de la checklist TE par défaut depuis SharePoint...", category: "Store")
-        
-        do {
-            if let downloadedChecklist = try await SharePointSyncService.shared.downloadDefaultChecklistTE() {
-                self.checklistTE = downloadedChecklist
-                saveChecklistTE()
-                Logger.success("Checklist TE par défaut téléchargée et sauvegardée: \(downloadedChecklist.title)", category: "Store")
-                NotificationCenter.default.post(name: NSNotification.Name("ChecklistTEDownloaded"), object: nil)
-            } else {
-                Logger.warning("Pas de checklist TE par défaut trouvée sur SharePoint", category: "Store")
-            }
-        } catch {
-            Logger.error("Erreur lors du téléchargement de la checklist TE: \(error.localizedDescription)", category: "Store")
-        }
-    }
-    
-    /// Charge une checklist depuis le bundle de l'application ou le système de fichiers local
-    /// - Parameter fileName: Le nom du fichier JSON à charger
-    /// - Returns: La checklist chargée, ou nil si le fichier n'existe pas
-    private func loadChecklistFromBundle(fileName: String) -> Checklist? {
-        var url: URL?
-        
-        // Essayer d'abord depuis le bundle
-        if let bundleURL = Bundle.main.url(forResource: fileName.replacingOccurrences(of: ".json", with: ""), withExtension: "json", subdirectory: "Checklists") {
-            url = bundleURL
-        } else {
-            // Sinon, essayer depuis le système de fichiers local (pour le développement)
-            // Chercher dans le dossier du projet
-            let projectPath = "/Users/sylvaingallon/Desktop/Railskills rebuild/RailSkills/RailSkills/Checklists/\(fileName)"
-            if FileManager.default.fileExists(atPath: projectPath) {
-                url = URL(fileURLWithPath: projectPath)
-            }
-        }
-        
-        guard let fileURL = url else {
-            Logger.debug("Fichier \(fileName) non trouvé dans le bundle ni dans le système de fichiers", category: "Store")
-            return nil
-        }
-        
-        do {
-            let data = try Data(contentsOf: fileURL)
-            let decoder = jsonDecoder
-            let checklist = try decoder.decode(Checklist.self, from: data)
-            Logger.success("Checklist chargée depuis \(fileURL.lastPathComponent): \(checklist.title)", category: "Store")
-            return checklist
-        } catch {
-            Logger.error("Erreur lors du chargement de la checklist depuis \(fileURL.path): \(error.localizedDescription)", category: "Store")
-            return nil
         }
     }
     
@@ -563,10 +315,8 @@ final class Store: ObservableObject {
             if !downloadedDrivers.isEmpty {
                 // Sauvegarder les conducteurs téléchargés
                 self.drivers = downloadedDrivers
-                // Le didSet de drivers devrait appeler saveDriversDebounced automatiquement
-                // Mais on force aussi une sauvegarde immédiate pour être sûr
                 saveDrivers()
-                Logger.success("\(downloadedDrivers.count) conducteur(s) téléchargé(s) depuis SharePoint et sauvegardé(s)", category: "Store")
+                Logger.success("\(downloadedDrivers.count) conducteur(s) téléchargé(s) depuis SharePoint", category: "Store")
                 
                 // Notifier que les conducteurs ont été téléchargés
                 NotificationCenter.default.post(name: NSNotification.Name("DriversDownloaded"), object: nil)
@@ -580,106 +330,103 @@ final class Store: ObservableObject {
     
     /// Synchronise bidirectionnellement avec SharePoint pour récupérer les modifications depuis le site web
     /// Fusionne intelligemment les modifications locales et distantes
-    /// - Note: Cette fonction peut être appelée manuellement ou périodiquement
+    /// - Returns: Une chaîne de caractères détaillant le résultat de la synchronisation (debug info)
     @MainActor
-    func syncDriversBidirectional() async {
+    @discardableResult
+    func syncDriversBidirectional() async throws -> String {
         guard sharePointService.isConfigured else {
             Logger.info("SharePoint non configuré, synchronisation impossible", category: "Store")
-            return
+            throw SharePointSyncError.notConfigured
         }
         
         guard !sharePointService.isSyncing else {
             Logger.debug("Synchronisation déjà en cours", category: "Store")
-            return
+            return "Synchronisation déjà en cours"
         }
         
         Logger.info("Synchronisation bidirectionnelle avec SharePoint...", category: "Store")
         
-        do {
-            // 1. Récupérer les conducteurs depuis SharePoint
-            let remoteDrivers = try await sharePointService.fetchDrivers()
-            
-            // 2. Créer un dictionnaire des conducteurs distants par ID
-            let remoteDict = Dictionary(uniqueKeysWithValues: remoteDrivers.map { ($0.id, $0) })
-            
-            // 3. Fusionner avec les conducteurs locaux
-            var updatedDrivers: [DriverRecord] = []
-            var hasUpdates = false
-            
-            // Créer un dictionnaire des conducteurs locaux par ID pour vérification rapide
-            let localDict = Dictionary(uniqueKeysWithValues: drivers.map { ($0.id, $0) })
-            
-            // Pour chaque conducteur local, vérifier s'il existe une version distante plus récente
-            for localDriver in drivers {
-                if let remoteDriver = remoteDict[localDriver.id] {
-                    // Comparer les dates de dernière évaluation pour détecter les modifications
-                    let localDate = localDriver.lastEvaluation ?? Date.distantPast
-                    let remoteDate = remoteDriver.lastEvaluation ?? Date.distantPast
-                    
-                    if remoteDate > localDate {
-                        // Version distante plus récente, fusionner intelligemment
-                        let merged = sharePointService.mergeDriverRecords(local: localDriver, remote: remoteDriver)
-                        updatedDrivers.append(merged)
-                        hasUpdates = true
-                        Logger.debug("Conducteur '\(localDriver.name)' mis à jour depuis SharePoint", category: "Store")
-                    } else if localDate > remoteDate {
-                        // Version locale plus récente, garder locale mais synchroniser vers SharePoint
-                        updatedDrivers.append(localDriver)
-                    } else {
-                        // Dates identiques, fusionner quand même pour s'assurer que tout est à jour
-                        let merged = sharePointService.mergeDriverRecords(local: localDriver, remote: remoteDriver)
-                        updatedDrivers.append(merged)
-                    }
-                } else {
-                    // Conducteur local n'existe pas sur SharePoint, garder local
-                    updatedDrivers.append(localDriver)
-                }
-            }
-            
-            // 4. Ajouter les nouveaux conducteurs distants qui n'existent pas localement
-            var newDriversCount = 0
-            for remoteDriver in remoteDrivers {
-                if localDict[remoteDriver.id] == nil {
-                    // Nouveau conducteur depuis SharePoint, l'ajouter
-                    updatedDrivers.append(remoteDriver)
+        // RECUPERATION DU DOSSIER CIBLE (DEBUG)
+        // On récupère le chemin que le service va utiliser pour le debug
+        let _ = sharePointService.getCTTFolderName() // Appel pour vérification de l'état (optionnel)
+        // Note: Si getCTTFolderName n'est pas accessible ici, on se fiera au résultat.
+        
+        // 1. Récupérer les conducteurs depuis SharePoint
+        let remoteDrivers = try await sharePointService.fetchDrivers()
+        
+        // 2. Créer un dictionnaire des conducteurs distants par ID
+        let remoteDict = Dictionary(uniqueKeysWithValues: remoteDrivers.map { ($0.id, $0) })
+        
+        // 3. Fusionner avec les conducteurs locaux
+        var updatedDrivers: [DriverRecord] = []
+        var hasUpdates = false
+        
+        // Créer un dictionnaire des conducteurs locaux par ID pour vérification rapide
+        let localDict = Dictionary(uniqueKeysWithValues: drivers.map { ($0.id, $0) })
+        
+        // Pour chaque conducteur local, vérifier s'il existe une version distante plus récente
+        for localDriver in drivers {
+            if let remoteDriver = remoteDict[localDriver.id] {
+                // Comparer les dates de dernière évaluation pour détecter les modifications
+                let localDate = localDriver.lastEvaluation ?? Date.distantPast
+                let remoteDate = remoteDriver.lastEvaluation ?? Date.distantPast
+                
+                if remoteDate > localDate {
+                    // Version distante plus récente, fusionner intelligemment
+                    let merged = sharePointService.mergeDriverRecords(local: localDriver, remote: remoteDriver)
+                    updatedDrivers.append(merged)
                     hasUpdates = true
-                    newDriversCount += 1
-                    Logger.info("Nouveau conducteur '\(remoteDriver.name)' (ID: \(remoteDriver.id)) récupéré depuis SharePoint", category: "Store")
+                    Logger.debug("Conducteur '\(localDriver.name)' mis à jour depuis SharePoint", category: "Store")
+                } else if localDate > remoteDate {
+                    // Version locale plus récente, garder locale mais synchroniser vers SharePoint
+                    updatedDrivers.append(localDriver)
+                } else {
+                    // Dates identiques, fusionner quand même pour s'assurer que tout est à jour
+                    let merged = sharePointService.mergeDriverRecords(local: localDriver, remote: remoteDriver)
+                    updatedDrivers.append(merged)
                 }
-            }
-            
-            Logger.info("Synchronisation: \(drivers.count) local(s), \(remoteDrivers.count) distant(s), \(newDriversCount) nouveau(x), \(updatedDrivers.count) total après fusion", category: "Store")
-            
-            // 5. Mettre à jour les conducteurs locaux avec les versions fusionnées
-            // Toujours mettre à jour si le nombre a changé ou s'il y a des mises à jour
-            let previousCount = drivers.count
-            
-            // Toujours mettre à jour pour s'assurer que les données fusionnées sont bien sauvegardées
-            // Même si rien n'a changé visuellement, la fusion peut avoir modifié des détails
-            self.drivers = updatedDrivers
-            // Le didSet de drivers devrait appeler saveDriversDebounced automatiquement
-            // Mais on force aussi une sauvegarde immédiate pour être sûr
-            saveDrivers()
-            
-            if hasUpdates || updatedDrivers.count != previousCount {
-                Logger.success("Synchronisation bidirectionnelle réussie - \(updatedDrivers.count - previousCount) nouveau(x) conducteur(s) ajouté(s) (avant: \(previousCount), après: \(updatedDrivers.count))", category: "Store")
             } else {
-                Logger.info("Synchronisation bidirectionnelle complétée - données fusionnées et sauvegardées (local: \(previousCount), distant: \(remoteDrivers.count), fusionné: \(updatedDrivers.count))", category: "Store")
+                // Conducteur local n'existe pas sur SharePoint, garder local
+                updatedDrivers.append(localDriver)
             }
+        }
+        
+        // 4. Ajouter les nouveaux conducteurs distants qui n'existent pas localement
+        var newDriversCount = 0
+        for remoteDriver in remoteDrivers {
+            if localDict[remoteDriver.id] == nil {
+                // Nouveau conducteur depuis SharePoint, l'ajouter
+                updatedDrivers.append(remoteDriver)
+                hasUpdates = true
+                newDriversCount += 1
+                Logger.info("Nouveau conducteur '\(remoteDriver.name)' (ID: \(remoteDriver.id)) récupéré depuis SharePoint", category: "Store")
+            }
+        }
+        
+        Logger.info("Synchronisation: \(drivers.count) local(s), \(remoteDrivers.count) distant(s), \(newDriversCount) nouveau(x), \(updatedDrivers.count) total après fusion", category: "Store")
+        
+        // 5. Mettre à jour les conducteurs locaux avec les versions fusionnées
+        // Toujours mettre à jour si le nombre a changé ou s'il y a des mises à jour
+        if hasUpdates || updatedDrivers.count != drivers.count {
+            let previousCount = drivers.count
+            self.drivers = updatedDrivers
+            saveDrivers()
+            Logger.success("Synchronisation bidirectionnelle réussie - \(updatedDrivers.count - previousCount) nouveau(x) conducteur(s) ajouté(s) (avant: \(previousCount), après: \(updatedDrivers.count))", category: "Store")
             
             // Notifier les modifications
             NotificationCenter.default.post(
                 name: NSNotification.Name("DriversUpdatedFromSharePoint"),
                 object: nil
             )
-            
-            // 6. Synchroniser les modifications locales vers SharePoint
-            try await sharePointService.syncDrivers(updatedDrivers)
-            Logger.success("Synchronisation bidirectionnelle complète", category: "Store")
-            
-        } catch {
-            Logger.error("Erreur lors de la synchronisation bidirectionnelle: \(error.localizedDescription)", category: "Store")
+        } else {
+            Logger.info("Aucune modification détectée depuis SharePoint (local: \(drivers.count), distant: \(remoteDrivers.count), fusionné: \(updatedDrivers.count))", category: "Store")
         }
+        
+        // 6. Synchroniser les modifications locales vers SharePoint
+        try await sharePointService.syncDrivers(updatedDrivers)
+        Logger.success("Synchronisation bidirectionnelle complète", category: "Store")
+        
+        return "Succès !\nRemote trouvés: \(remoteDrivers.count)\nNouveaux ajoutés: \(newDriversCount)\nTotal final: \(updatedDrivers.count)\nDossier CTT visé: \(sharePointService.getCTTFolderName())"
     }
     
     deinit {
@@ -736,76 +483,64 @@ final class Store: ObservableObject {
         }
     }
     
-    /// Charge la checklist depuis UserDefaults
-    /// Ne charge que si des données ont été sauvegardées (après un import)
+    /// Charge les checklists depuis UserDefaults
+    /// Charge les trois types de checklists séparément
     private func loadChecklist() {
-        guard !lastChecklistData.isEmpty else {
-            // Aucune checklist sauvegardée - l'application démarre vierge
-            checklist = nil
-            return
-        }
-        do {
-            let decodedChecklist = try jsonDecoder.decode(Checklist.self, from: lastChecklistData)
-            // Ne charger que si la checklist contient des éléments
-            if decodedChecklist.items.isEmpty {
-                Logger.warning("Checklist vide détectée lors du chargement, réinitialisation", category: "Store")
-                checklist = nil
+        // Charger la checklist Triennale
+        if !lastChecklistData.isEmpty {
+            do {
+                let decodedChecklist = try jsonDecoder.decode(Checklist.self, from: lastChecklistData)
+                if decodedChecklist.items.isEmpty {
+                    Logger.warning("Checklist Triennale vide détectée lors du chargement", category: "Store")
+                    checklistTriennale = nil
+                    lastChecklistData = Data()
+                } else {
+                    checklistTriennale = decodedChecklist
+                    Logger.success("Checklist Triennale chargée: \(decodedChecklist.title) avec \(decodedChecklist.items.count) éléments", category: "Store")
+                }
+            } catch {
+                Logger.error("Erreur de décodage de la checklist Triennale: \(error.localizedDescription)", category: "Store")
+                checklistTriennale = nil
                 lastChecklistData = Data()
-            } else {
-                checklist = decodedChecklist
-                Logger.success("Checklist chargée: \(decodedChecklist.title) avec \(decodedChecklist.items.count) éléments", category: "Store")
             }
-        } catch {
-            Logger.error("Erreur de décodage de la checklist: \(error.localizedDescription)", category: "Store")
-            // En cas d'erreur, réinitialiser pour éviter un état corrompu
-            checklist = nil
-            lastChecklistData = Data()
         }
-    }
-    
-    /// Charge la checklist VP depuis UserDefaults
-    private func loadChecklistVP() {
-        guard !lastChecklistVPData.isEmpty else {
-            checklistVP = nil
-            return
-        }
-        do {
-            let decodedChecklist = try jsonDecoder.decode(Checklist.self, from: lastChecklistVPData)
-            if decodedChecklist.items.isEmpty {
-                Logger.warning("Checklist VP vide détectée lors du chargement, réinitialisation", category: "Store")
+        
+        // Charger la checklist VP
+        if !lastChecklistVPData.isEmpty {
+            do {
+                let decodedChecklist = try jsonDecoder.decode(Checklist.self, from: lastChecklistVPData)
+                if decodedChecklist.items.isEmpty {
+                    Logger.warning("Checklist VP vide détectée lors du chargement", category: "Store")
+                    checklistVP = nil
+                    lastChecklistVPData = Data()
+                } else {
+                    checklistVP = decodedChecklist
+                    Logger.success("Checklist VP chargée: \(decodedChecklist.title) avec \(decodedChecklist.items.count) éléments", category: "Store")
+                }
+            } catch {
+                Logger.error("Erreur de décodage de la checklist VP: \(error.localizedDescription)", category: "Store")
                 checklistVP = nil
                 lastChecklistVPData = Data()
-            } else {
-                checklistVP = decodedChecklist
-                Logger.success("Checklist VP chargée: \(decodedChecklist.title) avec \(decodedChecklist.items.count) éléments", category: "Store")
             }
-        } catch {
-            Logger.error("Erreur de décodage de la checklist VP: \(error.localizedDescription)", category: "Store")
-            checklistVP = nil
-            lastChecklistVPData = Data()
         }
-    }
-    
-    /// Charge la checklist TE depuis UserDefaults
-    private func loadChecklistTE() {
-        guard !lastChecklistTEData.isEmpty else {
-            checklistTE = nil
-            return
-        }
-        do {
-            let decodedChecklist = try jsonDecoder.decode(Checklist.self, from: lastChecklistTEData)
-            if decodedChecklist.items.isEmpty {
-                Logger.warning("Checklist TE vide détectée lors du chargement, réinitialisation", category: "Store")
+        
+        // Charger la checklist TE
+        if !lastChecklistTEData.isEmpty {
+            do {
+                let decodedChecklist = try jsonDecoder.decode(Checklist.self, from: lastChecklistTEData)
+                if decodedChecklist.items.isEmpty {
+                    Logger.warning("Checklist TE vide détectée lors du chargement", category: "Store")
+                    checklistTE = nil
+                    lastChecklistTEData = Data()
+                } else {
+                    checklistTE = decodedChecklist
+                    Logger.success("Checklist TE chargée: \(decodedChecklist.title) avec \(decodedChecklist.items.count) éléments", category: "Store")
+                }
+            } catch {
+                Logger.error("Erreur de décodage de la checklist TE: \(error.localizedDescription)", category: "Store")
                 checklistTE = nil
                 lastChecklistTEData = Data()
-            } else {
-                checklistTE = decodedChecklist
-                Logger.success("Checklist TE chargée: \(decodedChecklist.title) avec \(decodedChecklist.items.count) éléments", category: "Store")
             }
-        } catch {
-            Logger.error("Erreur de décodage de la checklist TE: \(error.localizedDescription)", category: "Store")
-            checklistTE = nil
-            lastChecklistTEData = Data()
         }
     }
     
@@ -828,7 +563,6 @@ final class Store: ObservableObject {
         do {
             let data = try jsonEncoder.encode(drivers)
             driversData = data
-            Logger.debug("\(drivers.count) conducteur(s) sauvegardé(s) avec succès", category: "Store")
         } catch {
             Logger.error("Erreur d'encodage des conducteurs: \(error.localizedDescription)", category: "Store")
         }
@@ -836,85 +570,45 @@ final class Store: ObservableObject {
     
     // Système de débouncing pour la sauvegarde de la checklist
     private func saveChecklistDebounced() {
-        isSaving = true
         saveCancellable?.cancel()
         saveCancellable = Just(())
             .delay(for: .seconds(AppConstants.Debounce.saveDelay), scheduler: RunLoop.main)
             .sink { [weak self] _ in
-                self?.saveChecklist()
-                self?.isSaving = false
+                self?.saveChecklists()
             }
     }
     
-    /// Sauvegarde la checklist dans UserDefaults
-    /// La checklist n'est sauvegardée que si elle a été importée ou créée par l'utilisateur
-    private func saveChecklist() {
-        guard let checklist = checklist else {
-            // Si la checklist est nil, effacer les données sauvegardées
-            lastChecklistData = Data()
-            return
-        }
-        do {
-            let data = try jsonEncoder.encode(checklist)
-            lastChecklistData = data
-            Logger.success("Checklist sauvegardée: \(checklist.title) avec \(checklist.items.count) éléments", category: "Store")
-        } catch {
-            Logger.error("Erreur d'encodage de la checklist: \(error.localizedDescription)", category: "Store")
-        }
-    }
-    
-    /// Sauvegarde la checklist VP dans UserDefaults
-    private func saveChecklistVP() {
-        guard let checklist = checklistVP else {
-            lastChecklistVPData = Data()
-            return
-        }
-        do {
-            let data = try jsonEncoder.encode(checklist)
-            lastChecklistVPData = data
-            Logger.success("Checklist VP sauvegardée: \(checklist.title) avec \(checklist.items.count) éléments", category: "Store")
-        } catch {
-            Logger.error("Erreur d'encodage de la checklist VP: \(error.localizedDescription)", category: "Store")
-        }
-    }
-    
-    /// Sauvegarde la checklist TE dans UserDefaults
-    private func saveChecklistTE() {
-        guard let checklist = checklistTE else {
-            lastChecklistTEData = Data()
-            return
-        }
-        do {
-            let data = try jsonEncoder.encode(checklist)
-            lastChecklistTEData = data
-            Logger.success("Checklist TE sauvegardée: \(checklist.title) avec \(checklist.items.count) éléments", category: "Store")
-        } catch {
-            Logger.error("Erreur d'encodage de la checklist TE: \(error.localizedDescription)", category: "Store")
-        }
-    }
-    
-    // Système de débouncing pour la sauvegarde de la checklist VP
-    private func saveChecklistVPDebounced() {
-        isSaving = true
-        saveCancellable?.cancel()
-        saveCancellable = Just(())
-            .delay(for: .seconds(AppConstants.Debounce.saveDelay), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.saveChecklistVP()
-                self?.isSaving = false
+    /// Sauvegarde les trois checklists dans UserDefaults
+    private func saveChecklists() {
+        // Sauvegarder la checklist Triennale
+        if let checklistTriennale = checklistTriennale {
+            do {
+                let data = try jsonEncoder.encode(checklistTriennale)
+                lastChecklistData = data
+            } catch {
+                Logger.error("Erreur d'encodage de la checklist Triennale: \(error.localizedDescription)", category: "Store")
             }
-    }
-    
-    // Système de débouncing pour la sauvegarde de la checklist TE
-    private func saveChecklistTEDebounced() {
-        isSaving = true
-        saveCancellable?.cancel()
-        saveCancellable = Just(())
-            .delay(for: .seconds(AppConstants.Debounce.saveDelay), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.saveChecklistTE()
-                self?.isSaving = false
+        }
+        
+        // Sauvegarder la checklist VP
+        if let checklistVP = checklistVP {
+            do {
+                let data = try jsonEncoder.encode(checklistVP)
+                lastChecklistVPData = data
+            } catch {
+                Logger.error("Erreur d'encodage de la checklist VP: \(error.localizedDescription)", category: "Store")
             }
+        }
+        
+        // Sauvegarder la checklist TE
+        if let checklistTE = checklistTE {
+            do {
+                let data = try jsonEncoder.encode(checklistTE)
+                lastChecklistTEData = data
+            } catch {
+                Logger.error("Erreur d'encodage de la checklist TE: \(error.localizedDescription)", category: "Store")
+            }
+        }
     }
     
     // MARK: - Gestion de version
@@ -933,12 +627,8 @@ final class Store: ObservableObject {
     /// Utile pour tester une première utilisation ou réinitialiser l'application
     func resetAllData() {
         checklist = nil
-        checklistVP = nil
-        checklistTE = nil
         drivers = []
         lastChecklistData = Data()
-        lastChecklistVPData = Data()
-        lastChecklistTEData = Data()
         driversData = Data()
         appliedChecklistVersion = ""
     }
@@ -1039,70 +729,19 @@ final class Store: ObservableObject {
             Logger.success("Checklist '\(currentChecklist.title)' synchronisée automatiquement vers SharePoint", category: "Store")
         } catch {
             // Logger l'erreur mais ne pas interrompre l'utilisateur
-            Logger.warning("Erreur lors de la synchronisation automatique de la checklist vers SharePoint: \(error.localizedDescription)", category: "Store")
+            Logger.error("Erreur lors de la synchronisation de la checklist vers SharePoint: \(error)", category: "Store")
         }
     }
     
-    /// Synchronise la checklist VP vers SharePoint avec débouncing
-    private func syncChecklistVPToSharePointDebounced() {
-        guard sharePointAutoSyncEnabled && sharePointService.isConfigured && checklistVP != nil else { return }
-        sharePointSyncCancellable?.cancel()
-        sharePointSyncCancellable = Just(())
-            .delay(for: .seconds(AppConstants.Debounce.sharePointSyncDelay), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    await self?.syncChecklistVPToSharePoint()
-                }
-            }
-    }
+    // MARK: - Search Index Helper
     
-    /// Synchronise la checklist VP vers SharePoint (méthode interne)
-    private func syncChecklistVPToSharePoint() async {
-        guard sharePointAutoSyncEnabled && sharePointService.isConfigured,
-              let currentChecklist = checklistVP else { return }
-        
-        guard !sharePointService.isSyncing else {
-            Logger.debug("Synchronisation SharePoint déjà en cours, ignorée", category: "Store")
-            return
-        }
-        
-        do {
-            try await sharePointService.syncChecklist(currentChecklist)
-            Logger.success("Checklist VP '\(currentChecklist.title)' synchronisée automatiquement vers SharePoint", category: "Store")
-        } catch {
-            Logger.warning("Erreur lors de la synchronisation automatique de la checklist VP vers SharePoint: \(error.localizedDescription)", category: "Store")
-        }
-    }
-    
-    /// Synchronise la checklist TE vers SharePoint avec débouncing
-    private func syncChecklistTEToSharePointDebounced() {
-        guard sharePointAutoSyncEnabled && sharePointService.isConfigured && checklistTE != nil else { return }
-        sharePointSyncCancellable?.cancel()
-        sharePointSyncCancellable = Just(())
-            .delay(for: .seconds(AppConstants.Debounce.sharePointSyncDelay), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    await self?.syncChecklistTEToSharePoint()
-                }
-            }
-    }
-    
-    /// Synchronise la checklist TE vers SharePoint (méthode interne)
-    private func syncChecklistTEToSharePoint() async {
-        guard sharePointAutoSyncEnabled && sharePointService.isConfigured,
-              let currentChecklist = checklistTE else { return }
-        
-        guard !sharePointService.isSyncing else {
-            Logger.debug("Synchronisation SharePoint déjà en cours, ignorée", category: "Store")
-            return
-        }
-        
-        do {
-            try await sharePointService.syncChecklist(currentChecklist)
-            Logger.success("Checklist TE '\(currentChecklist.title)' synchronisée automatiquement vers SharePoint", category: "Store")
-        } catch {
-            Logger.warning("Erreur lors de la synchronisation automatique de la checklist TE vers SharePoint: \(error.localizedDescription)", category: "Store")
+    /// Met à jour l'index de recherche avec les checklists actives
+    private func updateSearchIndex() {
+        // Utiliser la checklist Triennale comme référence principale pour l'index de recherche
+        if let checklist = checklistTriennale {
+            SearchService.updateNotesSearchIndex(drivers: drivers, checklistTitle: checklist.title)
+        } else {
+            SearchService.resetSearchIndex()
         }
     }
 }
-

@@ -1,0 +1,68 @@
+{
+  // Configuration Zed pour le projet RailSkills
+  "editor": {
+    "font_size": 14,
+    "font_family": "SF Mono, Menlo, Monaco, 'Courier New', monospace",
+    "line_height": 1.5,
+    "tab_size": 4,
+    "soft_tabs": true,
+    "word_wrap": "editor_width",
+    "show_whitespace": "all",
+    "trim_trailing_whitespace": true,
+    "insert_final_newline": true,
+    "auto_save": "on_focus_change",
+    "format_on_save": true
+  },
+
+  "languages": {
+    "Swift": {
+      "indent_size": 4,
+      "tab_size": 4
+    },
+    "Markdown": {
+      "indent_size": 2
+    },
+    "JSON": {
+      "indent_size": 2,
+      "tab_size": 2
+    },
+    "JavaScript": {
+      "indent_size": 2,
+      "tab_size": 2
+    }
+  },
+
+  "search": {
+    "case_sensitive": false,
+    "whole_word": false,
+    "regex": false
+  },
+
+  "files": {
+    "exclude": [
+      "**/.git",
+      "**/node_modules",
+      "**/build",
+      "**/DerivedData",
+      "**/.swiftpm",
+      "**/xcuserdata",
+      "**/*.xcworkspace",
+      "**/*.xcodeproj",
+      "**/.DS_Store",
+      "**/Pods"
+    ],
+    "watcher": "polling"
+  },
+
+  "terminal": {
+    "default_shell": "/bin/zsh"
+  },
+
+  "git": {
+    "auto_fetch": true,
+    "auto_stage_on_save": false
+  },
+
+  "theme": "One Dark",
+  "ui_font_size": 13
+}

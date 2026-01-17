@@ -51,3 +51,23 @@ echo ""
 echo "📦 Créez maintenant la release sur:"
 echo "   https://github.com/syl20mac/RailSkills/releases/new"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

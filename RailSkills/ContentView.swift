@@ -3,7 +3,7 @@
 //  RailSkills
 //
 //  Créé par Sylvain GALLON – Application iPad et iPhone pour le suivi des conducteurs sur territoire CFL.
-//  SwiftUI • iOS 18+ (iPadOS 18.6+ exclusif)
+//  SwiftUI • iOS 26+ (iPadOS 26+ exclusif)
 //  VERSION OPTIMISÉE COMPLÈTE
 //
 //  Cette application permet de suivre les conducteurs selon une checklist triennale.
@@ -35,7 +35,7 @@ struct ContentView: View {
     @State private var cachedSections: [ChecklistSection] = []     // cache des sections pour optimiser le rendu
     @State private var categoryProgressCache: [UUID: (completed: Int, total: Int)] = [:] // cache de progression par catégorie
     @State private var selectedCategoryId: UUID? = nil             // catégorie sélectionnée pour le panneau de détail (iPad)
-    @State private var selectedTab: Int = 0                        // Onglet sélectionné
+    @State private var selectedTab: Int = 0                        // Onglet sélectionné (Dashboard par défaut)
     @State private var checklistFilter: ChecklistFilter = .all     // Filtre des questions selon l'état
     @State private var collapsedAllCompact: Bool = true            // Indique si toutes les catégories sont repliées sur iPhone
     @State private var searchDebounceTask: Task<Void, Never>?      // Task pour le debounce de recherche
@@ -153,98 +153,10 @@ struct ContentView: View {
     private var detailView: some View {
         if vm.store.checklist == nil {
             ChecklistImportWelcomeView(vm: vm)
-        } else if let categoryId = selectedCategoryId {
-            // Chercher la section originale (non filtrée) pour avoir le titre
-            let originalSection = cachedSections.first(where: { $0.categoryId == categoryId })
-            
-            // Chercher la section filtrée
-            let filteredSection = getFilteredSections()?.first(where: { $0.categoryId == categoryId })
-            
-            // Si on a une section originale mais pas de section filtrée, c'est que le filtre a tout supprimé
-            if let originalSection = originalSection, filteredSection == nil {
-                // Afficher la vue avec le filtre mais sans items
-                List {
-                    // Barre de recherche
-                    Section {
-                        searchBar
-                    }
-                    .listSectionSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                    
-                    // Filtre
-                    Section {
-                        FilterMenuView(selectedFilter: $checklistFilter) {
-                            updateSectionsCache()
-                        }
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .listRowBackground(Color.clear)
-                    }
-                    .listSectionSeparator(.hidden)
-                    
-                    // En-tête de la catégorie
-                    Section {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(originalSection.categoryTitle)
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(.primary)
-                                if let progress = categoryProgressCache[originalSection.categoryId] {
-                                    Text("\(progress.completed) sur \(progress.total) complétés")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer()
-                            if let progress = categoryProgressCache[originalSection.categoryId], progress.total > 0 {
-                                let percentage = Double(progress.completed) / Double(progress.total)
-                                CircularProgressView(progress: percentage, size: 48)
-                            }
-                        }
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 4)
-                    }
-                    .listSectionSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                    
-                    // Message : aucune question ne correspond au filtre
-                    Section {
-                        VStack(spacing: 12) {
-                            Image(systemName: checklistFilter.icon)
-                                .font(.system(size: 48))
-                                .foregroundStyle(.secondary.opacity(0.5))
-                            
-                            Text("Aucune question ne correspond au filtre")
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                            
-                            Text("Le filtre \"\(checklistFilter.label)\" ne retourne aucun résultat dans cette catégorie.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            
-                            Button {
-                                withAnimation {
-                                    checklistFilter = .all
-                                    updateSectionsCache()
-                                }
-                            } label: {
-                                Text("Afficher toutes les questions")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.regular)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
-                    }
-                }
-                .navigationTitle(originalSection.categoryTitle)
-                .navigationBarTitleDisplayMode(.inline)
-            } else if let section = filteredSection {
-                // Filtrer les items selon la recherche (titre et notes)
-                let filteredItems = getFilteredItemsForSection(section)
+        } else if let categoryId = selectedCategoryId,
+                  let section = getFilteredSections()?.first(where: { $0.categoryId == categoryId }) {
+            // Filtrer les items selon la recherche (titre et notes)
+            let filteredItems = getFilteredItemsForSection(section)
             
                  List {
                      // Barre de recherche dans le panneau de détail
@@ -301,60 +213,25 @@ struct ContentView: View {
                 // Questions de la catégorie (filtrées par la recherche)
                 if filteredItems.isEmpty {
                     Section {
-                        VStack(spacing: 12) {
-                            if !searchText.isEmpty {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 48))
-                                    .foregroundStyle(.secondary.opacity(0.5))
-                                
+                        if searchText.isEmpty {
+                            Text("Aucune question dans cette catégorie")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                                .padding()
+        } else {
+                            VStack(spacing: 8) {
                                 Text("Aucune question trouvée")
+                                    .foregroundStyle(.secondary)
                                     .font(.headline)
-                                    .foregroundStyle(.primary)
-                                
                                 Text("Aucune question ne correspond à '\(searchText)'")
-                                    .font(.subheadline)
                                     .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                            } else if checklistFilter != .all {
-                                Image(systemName: checklistFilter.icon)
-                                    .font(.system(size: 48))
-                                    .foregroundStyle(.secondary.opacity(0.5))
-                                
-                                Text("Aucune question ne correspond au filtre")
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
-                                
-                                Text("Le filtre \"\(checklistFilter.label)\" ne retourne aucun résultat dans cette catégorie.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                
-                                Button {
-                                    withAnimation {
-                                        checklistFilter = .all
-                                        updateSectionsCache()
-                                    }
-                                } label: {
-                                    Text("Afficher toutes les questions")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.regular)
-                            } else {
-                                Image(systemName: "list.bullet.rectangle")
-                                    .font(.system(size: 48))
-                                    .foregroundStyle(.secondary.opacity(0.5))
-                                
-                                Text("Aucune question dans cette catégorie")
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
+                                    .font(.caption)
                             }
+                            .padding()
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
                     }
             } else {
+
                          Section {
                              ForEach(filteredItems) { item in
                                  ChecklistRow(
@@ -385,24 +262,22 @@ struct ContentView: View {
             }
             .navigationTitle(section.categoryTitle)
             .navigationBarTitleDisplayMode(.inline)
-            } else {
-                // Aucune catégorie sélectionnée
-                VStack(spacing: 16) {
-                    Image(systemName: "list.bullet.rectangle")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.secondary)
-                    Text("Sélectionnez une catégorie")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                    Text("Choisissez une catégorie dans la liste de gauche pour voir les questions")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+            VStack(spacing: 16) {
+                Image(systemName: "list.bullet.rectangle")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.secondary)
+                Text("Sélectionnez une catégorie")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+                Text("Choisissez une catégorie dans la liste de gauche pour voir les questions")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
     
@@ -554,46 +429,18 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, 60)
         } else {
-            // Aucune section après filtrage
-            VStack(spacing: 16) {
-                Image(systemName: checklistFilter.icon)
-                    .font(.system(size: 64))
-                    .foregroundStyle(.secondary.opacity(0.5))
-                
+            VStack(spacing: 8) {
                 Text("Aucune question trouvée")
                     .font(.headline)
                     .foregroundStyle(.primary)
-                
                 if !searchText.isEmpty {
                     Text("Aucun résultat pour \"\(searchText)\"")
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                } else if checklistFilter != .all {
-                    VStack(spacing: 12) {
-                        Text("Le filtre \"\(checklistFilter.label)\" ne retourne aucun résultat.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Button {
-                            withAnimation {
-                                checklistFilter = .all
-                                updateSectionsCache()
-                            }
-                        } label: {
-                            Text("Afficher toutes les questions")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.regular)
-                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.top, 60)
-            .padding(.horizontal, 40)
+            .padding(.top, 40)
         }
     }
     
@@ -963,65 +810,82 @@ struct ContentView: View {
     }
     
     // MARK: - Body
-    
-    var body: some View {
+
+    private var mainTabView: some View {
         TabView(selection: $selectedTab) {
-            // Onglet Suivi (module principal - Triennale)
-            mainContentView
-                .tabItem {
-                    Label("Suivi", systemImage: "list.bullet.rectangle")
+            // Onglet Dashboard (premier onglet)
+            AnyView(
+                NavigationStack {
+                    DashboardView(vm: vm)
                 }
-                .tag(0)
-            
-            // Onglet VP
-            ChecklistTabView(vm: vm, checklistType: .vp, hSizeClass: hSizeClass)
-                .tabItem {
-                    Label("VP", systemImage: "checkmark.circle.fill")
-                }
-                .tag(6)
-            
-            // Onglet TE
-            ChecklistTabView(vm: vm, checklistType: .te, hSizeClass: hSizeClass)
-                .tabItem {
-                    Label("TE", systemImage: "checkmark.seal.fill")
-                }
-                .tag(7)
-            
-            // Onglet Éditeur de checklist
-            ChecklistEditorView(vm: vm)
-                .tabItem {
-                    Label("Éditeur", systemImage: "square.and.pencil")
-                }
-                .tag(1)
-            
-            // Onglet Dashboard
-            NavigationStack {
-                DashboardView(vm: vm)
-            }
+            )
             .tabItem {
                 Label("Dashboard", systemImage: "chart.bar.fill")
             }
-            .tag(3)
+            .tag(0)
             
-            // Onglet Rapports
-            ReportsView(vm: vm)
+            // Onglet Suivi (Triennale - module principal)
+            AnyView(mainContentView)
                 .tabItem {
-                    Label("Rapports", systemImage: "doc.text")
+                    Label("Suivi", systemImage: "list.bullet.rectangle")
+                }
+                .tag(1)
+            
+            // Onglet VP (Visite Périodique)
+            AnyView(ChecklistTabView(vm: vm, checklistType: .vp, hSizeClass: hSizeClass))
+                .tabItem {
+                    Label("VP", systemImage: "checkmark.circle.fill")
+                }
+                .tag(2)
+            
+            // Onglet TE (Triennale Élargie)
+            AnyView(ChecklistTabView(vm: vm, checklistType: .te, hSizeClass: hSizeClass))
+                .tabItem {
+                    Label("TE", systemImage: "checkmark.seal.fill")
+                }
+                .tag(3)
+            
+            // Onglet Éditeur de checklist
+            AnyView(ChecklistEditorView(vm: vm))
+                .tabItem {
+                    Label("Éditeur", systemImage: "square.and.pencil")
                 }
                 .tag(4)
             
+            // Onglet Partage / Export
+            AnyView(SharingView(vm: vm))
+                .tabItem {
+                    Label("Partage", systemImage: "square.and.arrow.up")
+                }
+                .tag(5)
+            
+            // Onglet Rapports
+            AnyView(ReportsView(vm: vm))
+                .tabItem {
+                    Label("Rapports", systemImage: "doc.text")
+                }
+                .tag(6)
+            
             // Onglet Réglages
-            SettingsView(vm: vm)
+            AnyView(SettingsView(vm: vm))
                 .tabItem {
                     Label("Réglages", systemImage: "gear")
                 }
-                .tag(5)
+                .tag(7)
         }
+    }
+    
+    private var configuredTabView: some View {
+        mainTabView
             .task { @MainActor in
                 updateSectionsCache()
                 selectFirstCategoryIfNeeded()
                 collapseAllCategoriesIfNeeded()
             }
+    }
+    
+    private var tabViewWithLifecycle: some View {
+        configuredTabView
             .onChange(of: vm.store.checklist?.title) { _, _ in
                 Task { @MainActor in
                     updateSectionsCache()
@@ -1041,7 +905,6 @@ struct ContentView: View {
                 }
             }
             .onChange(of: searchText) { _, newValue in
-                // Debounce de la recherche pour éviter les recalculs excessifs
                 searchDebounceTask?.cancel()
                 searchDebounceTask = Task { @MainActor in
                     try? await Task.sleep(nanoseconds: UInt64(AppConstants.Search.debounceDelay * 1_000_000_000))
@@ -1050,32 +913,22 @@ struct ContentView: View {
                     }
                 }
             }
-            .onChange(of: cachedSections) { _, _ in
-                selectFirstCategoryIfNeeded()
-                // Mettre à jour la progression quand les sections changent
-                updateCategoryProgressCache()
-                collapseAllCategoriesIfNeeded()
-            }
-            .onChange(of: vm.store.drivers) { _, _ in
-                // Mettre à jour la progression quand les données du conducteur changent
-                updateCategoryProgressCache()
-            }
-            .onReceive(vm.objectWillChange) { _ in
-                // Mettre à jour la progression quand le ViewModel change (changement d'état d'une question)
-                updateCategoryProgressCache()
-            }
+    }
+    
+    var body: some View {
+        tabViewWithLifecycle
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 // Synchroniser automatiquement quand l'app revient en avant-plan pour récupérer les modifications depuis le site web
                 if oldPhase != .active && newPhase == .active {
                     Task {
                         // Attendre un peu que l'app soit complètement active
                         try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 secondes
-                        await vm.store.syncDriversBidirectional()
+                        _ = try? await vm.store.syncDriversBidirectional()
                     }
                 }
             }
             .fullScreenCover(isPresented: $showingQuickEvalMode) {
-                QuickEvaluationMode(vm: vm)
+                QuickEvaluationMode(vm: vm, checklistType: .triennale)
             }
             .overlay(alignment: .topTrailing) {
                 // Indicateur de sauvegarde discret
@@ -1190,10 +1043,7 @@ extension ContentView {
 
     /// Filtre les items d'une section selon le texte de recherche (titre et notes)
     /// Utilise SearchService pour une recherche optimisée
-    /// Note: Les items sont déjà filtrés par le filtre de checklist dans getFilteredSections()
     private func getFilteredItemsForSection(_ section: ChecklistSection) -> [ChecklistItem] {
-        // Les items de la section sont déjà filtrés par checklistFilter dans getFilteredSections()
-        // On applique seulement le filtre de recherche textuelle
         if searchText.isEmpty {
             return section.items
         } else {
@@ -1246,3 +1096,4 @@ private struct DriverIndexChangeModifier: ViewModifier {
         }
     }
 }
+

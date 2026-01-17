@@ -37,22 +37,14 @@ final class HapticFeedbackManager {
     
     /// Feedback rigide (pour les actions précises)
     func rigid() {
-        if #available(iOS 13.0, *) {
-            let generator = UIImpactFeedbackGenerator(style: .rigid)
-            generator.impactOccurred()
-        } else {
-            medium()
-        }
+        let generator = UIImpactFeedbackGenerator(style: .rigid)
+        generator.impactOccurred()
     }
     
     /// Feedback doux (pour les actions délicates)
     func soft() {
-        if #available(iOS 13.0, *) {
-            let generator = UIImpactFeedbackGenerator(style: .soft)
-            generator.impactOccurred()
-        } else {
-            light()
-        }
+        let generator = UIImpactFeedbackGenerator(style: .soft)
+        generator.impactOccurred()
     }
     
     // MARK: - Notification Feedback (Pour les résultats d'actions)

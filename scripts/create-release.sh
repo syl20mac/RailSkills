@@ -72,3 +72,23 @@ else
     echo "   Allez sur: https://github.com/${GITHUB_REPO}/releases/new"
 fi
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

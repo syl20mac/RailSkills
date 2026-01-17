@@ -72,12 +72,10 @@ struct AddDriverSheet: View {
                         }
                     }
                     
-                    // Bouton d'ajout
                     ModernButton(
                         title: "Ajouter le conducteur",
                         icon: "person.badge.plus",
-                        style: .primary,
-                        size: .large
+                        style: .primary
                     ) {
                         addDriver()
                     }

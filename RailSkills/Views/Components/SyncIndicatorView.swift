@@ -352,7 +352,7 @@ struct SyncDetailsSheet: View {
         Task {
             do {
                 // Synchronisation bidirectionnelle : récupérer les modifications depuis SharePoint ET envoyer les modifications locales
-                await store.syncDriversBidirectional()
+                try await store.syncDriversBidirectional()
                 
                 // Synchroniser la checklist si présente
                 if let checklist = store.checklist {

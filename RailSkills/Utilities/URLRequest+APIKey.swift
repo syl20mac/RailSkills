@@ -24,8 +24,8 @@ extension URLRequest {
         addAPIKey()
         
         // Ajouter l'identité CTT si disponible
-        if SNCFIdentityService.shared.isAuthenticated {
-            setValue(SNCFIdentityService.shared.sncfIdentity, forHTTPHeaderField: "X-CTT-Identity")
+        if OrganizationIdentityService.shared.isAuthenticated {
+            setValue(OrganizationIdentityService.shared.userId, forHTTPHeaderField: "X-CTT-Identity")
         }
     }
 }

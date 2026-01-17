@@ -565,7 +565,6 @@ private extension ChecklistEditorView {
                       checklist.items.indices.contains(index) else { return }
                 checklist.items[index].notes = newNotes
                 vm.store.checklist = checklist
-                Logger.info("Réponses attendues mises à jour pour: \(checklist.items[index].title)", category: "ChecklistEditor")
             },
             onAddQuestion: {
                 addQuestionAfterIndex(index)

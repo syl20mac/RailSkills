@@ -138,18 +138,7 @@ struct SharePointSyncView: View {
                         .disabled(syncService.isSyncing)
                     }
                     
-                    // Bouton pour uploader les checklists par défaut (VP et TE)
-                    Button {
-                        uploadDefaultChecklists()
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.title3)
-                            Text("Uploader les checklists VP et TE")
-                                .font(.headline)
-                        }
-                    }
-                    .disabled(syncService.isSyncing)
+
                 } header: {
                     Text("Synchronisation")
                 } footer: {
@@ -236,19 +225,6 @@ struct SharePointSyncView: View {
         }
     }
     
-    private func uploadDefaultChecklists() {
-        Task { @MainActor in
-            do {
-                try await syncService.uploadDefaultChecklistsToSharePoint()
-                syncAlertTitle = "Upload réussi"
-                syncAlertMessage = "Les checklists VP et TE ont été uploadées vers SharePoint avec succès."
-                showingSyncAlert = true
-            } catch {
-                syncAlertTitle = "Erreur d'upload"
-                syncAlertMessage = error.localizedDescription
-                showingSyncAlert = true
-            }
-        }
-    }
+
 }
 

@@ -21,15 +21,24 @@ struct AzureADConfig {
     /// - ✅ Conformité Apple App Store (Guideline 5.1.1)
     /// - ✅ Sécurité des secrets organisationnels
     /// - ✅ Possibilité de rotation des secrets sans recompilation
-    static let clientSecret: String? = nil  // ← Ne JAMAIS hardcoder ici pour soumission App Store
+    static var clientSecret: String? {
+        AppConfigurationService.shared.organizationSecret
+    }
     
-    /// Tenant ID Azure AD (déjà configuré)
-    static let tenantId = "4a7c8238-5799-4b16-9fc6-9ad8fce5a7d9"
+    /// Tenant ID Azure AD
+    static var tenantId: String {
+        AppConfigurationService.shared.azureTenantId ?? ""
+    }
     
-    /// App ID (Client ID) Azure AD (déjà configuré)
-    static let clientId = "bd394412-97bf-4513-a59f-e023b010dff7"
+    /// App ID (Client ID) Azure AD
+    static var clientId: String {
+        AppConfigurationService.shared.azureClientId ?? ""
+    }
     
-    /// Site SharePoint (déjà configuré)
-    static let sharePointSite = "sncf.sharepoint.com:/sites/railskillsgrpo365"
+    /// Site SharePoint (Configuration optionnelle ou par défaut)
+    static var sharePointSite: String {
+        // Pour l'instant on garde une valeur par défaut ou on pourrait l'ajouter à la config
+        return "sncf.sharepoint.com:/sites/railskillsgrpo365"
+    }
 }
 

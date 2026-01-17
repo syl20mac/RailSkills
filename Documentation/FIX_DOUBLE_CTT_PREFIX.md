@@ -1,9 +1,8 @@
-# 🔧 Correction : Double préfixe CTT_ (technique)
+# 🔧 Correction : Double préfixe CTT_
 
 **Date :** 26 novembre 2025  
 **Problème :** Dossiers dupliqués avec double préfixe `CTT_CTT_` dans SharePoint  
-**Statut :** ✅ Corrigé  
-**Note :** Le préfixe `CTT_` est un identifiant technique pour les dossiers SharePoint. Le rôle utilisateur est "Manager Traction".
+**Statut :** ✅ Corrigé
 
 ---
 

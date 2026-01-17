@@ -1,4 +1,4 @@
-# 🧪 Test - Dossiers Manager Traction sur SharePoint
+# 🧪 Test - Dossiers CTT sur SharePoint
 
 ## ✅ Modifications apportées
 
@@ -10,12 +10,11 @@ private func getCTTFolderName() -> String
 ```
 - Récupère le `cttId` depuis `WebAuthService.shared.currentUser`
 - Fallback sur "Dev" (mode debug) ou "Shared" (production) si non connecté
-- **Note :** `cttId` et `CTT_` sont des identifiants techniques. Le rôle utilisateur est "Manager Traction".
 
 **Modifications** :
 - **Conducteurs** : `RailSkills/Data/` → `RailSkills/CTT_{cttId}/Data/`
 - **Checklists** : `RailSkills/Checklists/` → `RailSkills/CTT_{cttId}/Checklists/`
-- **Logs** : Affichent maintenant le dossier Manager Traction utilisé
+- **Logs** : Affichent maintenant le dossier CTT utilisé
 
 ### 2. Structure SharePoint résultante
 

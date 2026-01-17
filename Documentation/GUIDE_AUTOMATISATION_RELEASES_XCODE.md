@@ -303,3 +303,23 @@ Run script only when installing: ✅ (optionnel - uniquement pour Archive)
 
 **Une fois configuré, vos releases seront créées automatiquement lors des archives ! 🚀**
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

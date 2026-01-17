@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Guide for Apple Reviewers - RailSkills</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown.min.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Guide for Apple Reviewers - RailSkills</h1>
+</header>
+<h1 id="guide-for-apple-reviewers---railskills">Guide for Apple
+Reviewers - RailSkills</h1>
+<p><strong>Application :</strong> RailSkills<br />
+<strong>Version :</strong> 1.2<br />
+<strong>Date :</strong> December 2025</p>
+<hr />
+<h2 id="demo-mode">🎯 Demo Mode</h2>
+<p>RailSkills includes a <strong>demo mode</strong> that allows access
+to <strong>all features</strong> without authentication.</p>
+<h3 id="activating-demo-mode">Activating Demo Mode</h3>
+<ol type="1">
+<li><strong>Launch the RailSkills application</strong></li>
+<li><strong>On the login screen</strong>, click the green <strong>“Demo
+Mode”</strong> button (at the bottom of the screen)</li>
+<li>Demo mode activates automatically and loads demonstration data</li>
+</ol>
+<p><strong>No authentication is required.</strong></p>
+<hr />
+<h2 id="features-to-test">📱 Features to Test</h2>
+<h3 id="driver-management">1. Driver Management</h3>
+<ul>
+<li><strong>3 demonstration drivers</strong> are pre-loaded</li>
+<li>Access via the <strong>“Drivers”</strong> tab</li>
+<li>Test :
+<ul>
+<li>Display of the driver list</li>
+<li>Driver details (tap a driver)</li>
+<li>Progress of each driver</li>
+</ul></li>
+</ul>
+<h3 id="checklists-and-evaluations">2. Checklists and Evaluations</h3>
+<p>The application includes <strong>3 types of checklists</strong> :</p>
+<ul>
+<li><strong>Follow-up (Triennial)</strong> : Regulatory triennial
+follow-up</li>
+<li><strong>VP (Periodic Visit)</strong> : Periodic visits</li>
+<li><strong>TE (Evaluation Test)</strong> : Evaluation tests</li>
+</ul>
+<p><strong>For each checklist :</strong> - Validate questions (states:
+not validated, partial, validated, not processed) - Add notes per
+question - Record follow-up dates - View overall progress</p>
+<h3 id="dashboard">3. Dashboard</h3>
+<ul>
+<li>Access via the <strong>“Dashboard”</strong> tab</li>
+<li>View :
+<ul>
+<li>Triennial charts</li>
+<li>Global statistics</li>
+<li>Progress indicators</li>
+</ul></li>
+</ul>
+<h3 id="exportimport">4. Export/Import</h3>
+<ul>
+<li>Access via <strong>Settings → Export/Import</strong></li>
+<li>Test :
+<ul>
+<li>Data export (JSON)</li>
+<li>PDF report generation</li>
+</ul></li>
+</ul>
+<h3 id="search">5. Search</h3>
+<ul>
+<li>Use the search bar to :
+<ul>
+<li>Search for drivers</li>
+<li>Search in notes</li>
+</ul></li>
+</ul>
+<hr />
+<h2 id="included-demonstration-data">📊 Included Demonstration Data</h2>
+<h3 id="drivers-3">Drivers (3)</h3>
+<ol type="1">
+<li><strong>Driver 1</strong> : Advanced progress</li>
+<li><strong>Driver 2</strong> : Average progress</li>
+<li><strong>Driver 3</strong> : Beginner progress</li>
+</ol>
+<p>Each driver has : - Varied triennial start dates - Different
+checklist states - Notes and follow-up dates</p>
+<h3 id="checklist">Checklist</h3>
+<ul>
+<li><strong>3 categories</strong> : Safety, Technical, Regulatory</li>
+<li><strong>9 questions</strong> total</li>
+<li>Complete structure to test all features</li>
+</ul>
+<hr />
+<h2 id="verification-checklist">✅ Verification Checklist</h2>
+<p>Please verify that the following features work correctly :</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />The application launches without
+errors</label></li>
+<li><label><input type="checkbox" />Demo mode is accessible from the
+login screen</label></li>
+<li><label><input type="checkbox" />The 3 demonstration drivers are
+visible</label></li>
+<li><label><input type="checkbox" />The 3 checklists (Follow-up, VP, TE)
+are accessible</label></li>
+<li><label><input type="checkbox" />Question validation
+works</label></li>
+<li><label><input type="checkbox" />Adding notes works</label></li>
+<li><label><input type="checkbox" />Recording dates works</label></li>
+<li><label><input type="checkbox" />The dashboard displays
+charts</label></li>
+<li><label><input type="checkbox" />JSON export works</label></li>
+<li><label><input type="checkbox" />PDF generation works</label></li>
+<li><label><input type="checkbox" />Search works</label></li>
+<li><label><input type="checkbox" />The interface is responsive (iPad
+and iPhone)</label></li>
+</ul>
+<hr />
+<h2 id="common-issues">🔧 Common Issues</h2>
+<h3 id="if-demo-mode-does-not-activate">If demo mode does not
+activate</h3>
+<ol type="1">
+<li>Verify that you clicked the <strong>“Demo Mode”</strong> button
+(green, at the bottom of the screen)</li>
+<li>Restart the application</li>
+<li>If the problem persists, contact the developer</li>
+</ol>
+<h3 id="if-some-data-does-not-display">If some data does not
+display</h3>
+<ol type="1">
+<li>Verify that demo mode is properly activated</li>
+<li>Navigate between tabs (Drivers, Follow-up, VP, TE, Dashboard)</li>
+<li>Data may take a few seconds to load</li>
+</ol>
+<hr />
+<h2 id="contact">📞 Contact</h2>
+<p>For any questions or issues :</p>
+<ul>
+<li><strong>Email :</strong> RailSkills@syl20.org</li>
+<li><strong>Developer :</strong> Sylvain GALLON</li>
+</ul>
+<hr />
+<h2 id="important-notes">📝 Important Notes</h2>
+<ul>
+<li><strong>No authentication is required</strong> in demo mode</li>
+<li>All features are accessible without an account</li>
+<li>Demonstration data is isolated and does not synchronize</li>
+<li>The application works entirely in local mode in demo</li>
+</ul>
+<hr />
+<p><strong>Thank you for your review !</strong></p>
+</body>
+</html>

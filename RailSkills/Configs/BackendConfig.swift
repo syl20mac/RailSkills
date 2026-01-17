@@ -11,24 +11,36 @@ import Foundation
 /// Configuration centralisée du backend RailSkills
 struct BackendConfig {
     
+    // MARK: - Azure AD Configuration
+    
+    /// ID du locataire Azure AD (Tenant ID)
+    static var azureTenantId: String {
+        AppConfigurationService.shared.azureTenantId ?? ""
+    }
+    
+    /// ID du client Azure AD (Application ID)
+    static var azureClientId: String {
+        AppConfigurationService.shared.azureClientId ?? ""
+    }
+    
     // MARK: - URL du backend
     
     /// URL du backend RailSkills
     /// Stockée dans UserDefaults pour permettre la configuration dynamique
     static var backendURL: String {
         get {
-            // Vérifier d'abord UserDefaults (configuration manuelle)
-            if let savedURL = UserDefaults.standard.string(forKey: "railskills_backend_url"), !savedURL.isEmpty {
-                return savedURL
+            // Utiliser la configuration service
+            if let configuredURL = AppConfigurationService.shared.backendURL, !configuredURL.isEmpty {
+                return configuredURL
             }
             
-            // Sinon, utiliser la valeur par défaut
-            // URL du serveur RailSkills (accessible partout)
-            return "https://railskills.syl20.org"
+            // Si pas configuré (ou mode local), on n'a pas de backend
+            return ""
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: "railskills_backend_url")
-            Logger.info("URL du backend configurée: \(newValue)", category: "BackendConfig")
+            // Cette méthode ne devrait plus être utilisée directement, passer par AppConfigurationService
+            // Mais pour compatibilité :
+            // (Note: AppConfigurationService stocke le backend séparément)
         }
     }
     
@@ -75,4 +87,3 @@ struct BackendConfig {
         "\(backendURL)/api/organization"
     }
 }
-

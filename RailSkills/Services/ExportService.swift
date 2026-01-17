@@ -284,7 +284,7 @@ enum ExportService {
                 }
                 
                 // Ignorer les catégories dans le CSV
-                let state = statesMap[item.id] ?? 0
+                let state = statesMap[item.id.uuidString] ?? 0
                 let stateText: String
                 switch state {
                 case 3: stateText = "Non applicable"
@@ -293,10 +293,10 @@ enum ExportService {
                 default: stateText = "Non validé"
                 }
                 
-                let evalDate = datesMap[item.id]
+                let evalDate = datesMap[item.id.uuidString]
                 let evalDateStr = evalDate != nil ? DateFormatHelper.formatDate(evalDate!) : ""
                 
-                let note = notesMap[item.id] ?? ""
+                let note = notesMap[item.id.uuidString] ?? ""
                 
                 // Échapper les valeurs CSV
                 let driverName = escapeCSV(driver.name)

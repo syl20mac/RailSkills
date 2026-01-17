@@ -198,3 +198,23 @@ L'application fonctionne correctement et peut être soumise à TestFlight sans p
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

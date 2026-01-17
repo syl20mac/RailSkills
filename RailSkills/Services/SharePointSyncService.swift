@@ -50,9 +50,32 @@ class SharePointSyncService: ObservableObject {
                 return date
             }
             
+            
             // Essayer le format ISO8601 sans fractions de secondes
             iso8601Formatter.formatOptions = [.withInternetDateTime]
             if let date = iso8601Formatter.date(from: dateString) {
+                return date
+            }
+
+            // Essayer le format Python datetime.isoformat() (ex: 2025-11-13T21:57:09.148753)
+            // Ce format n'a pas de timezone et a des microsecondes
+            let pythonDateFormatter = DateFormatter()
+            pythonDateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
+            pythonDateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            pythonDateFormatter.timeZone = TimeZone(secondsFromGMT: 0) // Supposer UTC
+            if let date = pythonDateFormatter.date(from: dateString) {
+                return date
+            }
+            
+            // Essayer le format ISO standard sans timezone avec millisecondes
+            pythonDateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+            if let date = pythonDateFormatter.date(from: dateString) {
+                return date
+            }
+
+            // Essayer le format ISO standard sans timezone sans fractions
+            pythonDateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+            if let date = pythonDateFormatter.date(from: dateString) {
                 return date
             }
             
@@ -98,6 +121,11 @@ class SharePointSyncService: ObservableObject {
     /// Vérifie si le service est configuré et prêt
     /// Retourne true si le backend est configuré OU si Azure AD est configuré localement
     var isConfigured: Bool {
+        // En mode local, la synchronisation est désactivée
+        if AppConfigurationService.shared.isLocalMode {
+            return false
+        }
+
         // Vérifier d'abord si le backend est configuré
         if BackendConfig.isConfigured {
             return true
@@ -155,6 +183,12 @@ class SharePointSyncService: ObservableObject {
     /// - Parameter drivers: La liste des conducteurs à synchroniser (jeu global)
     /// - Throws: SharePointSyncError en cas d'erreur
     func syncDrivers(_ drivers: [DriverRecord]) async throws {
+        // Mode local : pas de synchro, on retourne succès immédiatement
+        if AppConfigurationService.shared.isLocalMode {
+            Logger.info("Mode local activé : synchronisation ignorée", category: "SharePointSync")
+            return
+        }
+
         guard isConfigured else {
             throw SharePointSyncError.notConfigured
         }
@@ -272,8 +306,9 @@ class SharePointSyncService: ObservableObject {
         
         // 2. Fallback : dossier partagé si non connecté
         #if DEBUG
-        Logger.warning("Aucun utilisateur connecté, utilisation du dossier 'CTT_Dev' pour SharePoint", category: "SharePointSync")
-        return "CTT_Dev"
+        // Pour la démo, on utilise le dossier de sylvain.gallon si aucun utilisateur n'est connecté
+        Logger.warning("Aucun utilisateur connecté, utilisation du dossier 'CTT_sylvain.gallon' pour la démo", category: "SharePointSync")
+        return "CTT_sylvain.gallon"
         #else
         Logger.warning("Aucun utilisateur connecté, utilisation du dossier 'CTT_Shared' pour SharePoint", category: "SharePointSync")
         return "CTT_Shared"
@@ -318,6 +353,12 @@ class SharePointSyncService: ObservableObject {
     /// - Parameter checklist: La checklist à synchroniser
     /// - Throws: SharePointSyncError en cas d'erreur
     func syncChecklist(_ checklist: Checklist) async throws {
+        // Mode local : pas de synchro, on retourne succès immédiatement
+        if AppConfigurationService.shared.isLocalMode {
+            Logger.info("Mode local activé : synchronisation checklist ignorée", category: "SharePointSync")
+            return
+        }
+
         guard isConfigured else {
             throw SharePointSyncError.notConfigured
         }
@@ -393,6 +434,12 @@ class SharePointSyncService: ObservableObject {
     /// - Returns: La liste de tous les conducteurs présents dans SharePoint (espace global)
     /// - Throws: SharePointSyncError en cas d'erreur
     func fetchDrivers() async throws -> [DriverRecord] {
+        // Mode local : pas de récupération distante, on retourne une liste vide
+        if AppConfigurationService.shared.isLocalMode {
+            Logger.info("Mode local activé : récupération SharePoint ignorée", category: "SharePointSync")
+            return []
+        }
+
         guard isConfigured else {
             throw SharePointSyncError.notConfigured
         }
@@ -993,6 +1040,11 @@ class SharePointSyncService: ObservableObject {
     /// - Parameter driverId: L'ID du conducteur à supprimer (UUID)
     /// - Throws: SharePointSyncError en cas d'erreur
     func deleteDriver(driverId: UUID) async throws {
+        // Mode local : pas de suppression distante
+        if AppConfigurationService.shared.isLocalMode {
+            return
+        }
+
         guard isConfigured else {
             Logger.warning("SharePoint non configuré, impossible de supprimer le conducteur", category: "SharePointSync")
             return
@@ -1035,6 +1087,11 @@ class SharePointSyncService: ObservableObject {
     /// - Parameter driverIds: Les IDs des conducteurs à supprimer
     /// - Throws: SharePointSyncError en cas d'erreur
     func deleteDrivers(driverIds: [UUID]) async throws {
+        // Mode local : pas de suppression distante
+        if AppConfigurationService.shared.isLocalMode {
+            return
+        }
+
         guard isConfigured else {
             Logger.warning("SharePoint non configuré, impossible de supprimer les conducteurs", category: "SharePointSync")
             return
@@ -1073,12 +1130,15 @@ class SharePointSyncService: ObservableObject {
     
     /// Chemin du fichier checklist par défaut sur SharePoint
     private let defaultChecklistPath = "RailSkills/Checklists/questions_CFL.json"
-    private let defaultChecklistVPPath = "RailSkills/Checklists/questions_VP.json"
-    private let defaultChecklistTEPath = "RailSkills/Checklists/questions_TE.json"
     
     /// Télécharge la checklist par défaut depuis SharePoint
     /// - Returns: La checklist téléchargée, ou nil si non trouvée
     func downloadDefaultChecklist() async throws -> Checklist? {
+        // Mode local : pas de téléchargement distant
+        if AppConfigurationService.shared.isLocalMode {
+            return nil
+        }
+
         guard isConfigured else {
             Logger.warning("SharePoint non configuré, impossible de télécharger la checklist", category: "SharePointSync")
             return nil
@@ -1108,70 +1168,6 @@ class SharePointSyncService: ObservableObject {
         }
     }
     
-    /// Télécharge la checklist VP par défaut depuis SharePoint
-    /// - Returns: La checklist VP téléchargée, ou nil si non trouvée
-    func downloadDefaultChecklistVP() async throws -> Checklist? {
-        guard isConfigured else {
-            Logger.warning("SharePoint non configuré, impossible de télécharger la checklist VP", category: "SharePointSync")
-            return nil
-        }
-        
-        Logger.info("Téléchargement de la checklist VP par défaut depuis SharePoint...", category: "SharePointSync")
-        
-        do {
-            let siteId = try await getSiteId()
-            
-            // Télécharger le fichier
-            let endpoint = "/sites/\(siteId)/drive/root:/\(defaultChecklistVPPath):/content"
-            let data = try await azureADService.authenticatedRequest(endpoint: endpoint)
-            
-            // Décoder la checklist
-            let decoder = createFlexibleJSONDecoder()
-            
-            let checklist = try decoder.decode(Checklist.self, from: data)
-            
-            Logger.success("Checklist VP téléchargée: \(checklist.title) avec \(checklist.items.count) éléments", category: "SharePointSync")
-            
-            return checklist
-            
-        } catch {
-            Logger.warning("Checklist VP par défaut non trouvée sur SharePoint: \(error.localizedDescription)", category: "SharePointSync")
-            return nil
-        }
-    }
-    
-    /// Télécharge la checklist TE par défaut depuis SharePoint
-    /// - Returns: La checklist TE téléchargée, ou nil si non trouvée
-    func downloadDefaultChecklistTE() async throws -> Checklist? {
-        guard isConfigured else {
-            Logger.warning("SharePoint non configuré, impossible de télécharger la checklist TE", category: "SharePointSync")
-            return nil
-        }
-        
-        Logger.info("Téléchargement de la checklist TE par défaut depuis SharePoint...", category: "SharePointSync")
-        
-        do {
-            let siteId = try await getSiteId()
-            
-            // Télécharger le fichier
-            let endpoint = "/sites/\(siteId)/drive/root:/\(defaultChecklistTEPath):/content"
-            let data = try await azureADService.authenticatedRequest(endpoint: endpoint)
-            
-            // Décoder la checklist
-            let decoder = createFlexibleJSONDecoder()
-            
-            let checklist = try decoder.decode(Checklist.self, from: data)
-            
-            Logger.success("Checklist TE téléchargée: \(checklist.title) avec \(checklist.items.count) éléments", category: "SharePointSync")
-            
-            return checklist
-            
-        } catch {
-            Logger.warning("Checklist TE par défaut non trouvée sur SharePoint: \(error.localizedDescription)", category: "SharePointSync")
-            return nil
-        }
-    }
-    
     /// Télécharge une checklist depuis un chemin spécifique sur SharePoint
     /// - Parameter path: Le chemin du fichier (ex: "RailSkills/Checklists/ma_checklist.json")
     /// - Returns: La checklist téléchargée
@@ -1197,69 +1193,6 @@ class SharePointSyncService: ObservableObject {
         Logger.success("Checklist téléchargée: \(checklist.title) avec \(checklist.items.count) éléments", category: "SharePointSync")
         
         return checklist
-    }
-    
-    // MARK: - Upload des checklists par défaut
-    
-    /// Upload les fichiers JSON des checklists VP et TE vers SharePoint
-    /// Utilise les fichiers locaux créés dans RailSkills/Checklists/
-    /// - Throws: SharePointSyncError en cas d'erreur
-    func uploadDefaultChecklistsToSharePoint() async throws {
-        guard isConfigured else {
-            throw SharePointSyncError.notConfigured
-        }
-        
-        Logger.info("Upload des checklists par défaut (VP et TE) vers SharePoint...", category: "SharePointSync")
-        
-        let siteId = try await getSiteId()
-        let checklistsPath = "RailSkills/Checklists"
-        
-        // Créer le dossier s'il n'existe pas
-        try await ensureFolderExists(siteId: siteId, folderPath: checklistsPath)
-        
-        // Upload de la checklist VP
-        let vpFilePath = "/Users/sylvaingallon/Desktop/Railskills rebuild/RailSkills/RailSkills/Checklists/questions_VP.json"
-        if FileManager.default.fileExists(atPath: vpFilePath) {
-            do {
-                let vpData = try Data(contentsOf: URL(fileURLWithPath: vpFilePath))
-                try await uploadFile(
-                    siteId: siteId,
-                    fileName: "questions_VP.json",
-                    data: vpData,
-                    folderPath: checklistsPath,
-                    overwrite: true
-                )
-                Logger.success("Checklist VP uploadée vers SharePoint", category: "SharePointSync")
-            } catch {
-                Logger.error("Erreur lors de l'upload de la checklist VP: \(error.localizedDescription)", category: "SharePointSync")
-                throw error
-            }
-        } else {
-            Logger.warning("Fichier questions_VP.json non trouvé à \(vpFilePath)", category: "SharePointSync")
-        }
-        
-        // Upload de la checklist TE
-        let teFilePath = "/Users/sylvaingallon/Desktop/Railskills rebuild/RailSkills/RailSkills/Checklists/questions_TE.json"
-        if FileManager.default.fileExists(atPath: teFilePath) {
-            do {
-                let teData = try Data(contentsOf: URL(fileURLWithPath: teFilePath))
-                try await uploadFile(
-                    siteId: siteId,
-                    fileName: "questions_TE.json",
-                    data: teData,
-                    folderPath: checklistsPath,
-                    overwrite: true
-                )
-                Logger.success("Checklist TE uploadée vers SharePoint", category: "SharePointSync")
-            } catch {
-                Logger.error("Erreur lors de l'upload de la checklist TE: \(error.localizedDescription)", category: "SharePointSync")
-                throw error
-            }
-        } else {
-            Logger.warning("Fichier questions_TE.json non trouvé à \(teFilePath)", category: "SharePointSync")
-        }
-        
-        Logger.success("Upload des checklists par défaut terminé", category: "SharePointSync")
     }
 }
 
@@ -1464,10 +1397,10 @@ extension SharePointSyncService {
     
     /// Fusionne les états des questions en privilégiant l'état le plus avancé
     private func mergeChecklistStates(
-        local: [String: [UUID: Int]],
-        remote: [String: [UUID: Int]]
-    ) -> [String: [UUID: Int]] {
-        var merged: [String: [UUID: Int]] = local
+        local: [String: [String: Int]],
+        remote: [String: [String: Int]]
+    ) -> [String: [String: Int]] {
+        var merged: [String: [String: Int]] = local
         
         for (checklistKey, remoteStates) in remote {
             if var localStates = merged[checklistKey] {
@@ -1493,10 +1426,10 @@ extension SharePointSyncService {
     
     /// Fusionne les notes en concaténant si différentes
     private func mergeNotes(
-        local: [String: [UUID: String]],
-        remote: [String: [UUID: String]]
-    ) -> [String: [UUID: String]] {
-        var merged: [String: [UUID: String]] = local
+        local: [String: [String: String]],
+        remote: [String: [String: String]]
+    ) -> [String: [String: String]] {
+        var merged: [String: [String: String]] = local
         
         for (checklistKey, remoteNotes) in remote {
             if var localNotes = merged[checklistKey] {
@@ -1524,10 +1457,10 @@ extension SharePointSyncService {
     
     /// Fusionne les dates en prenant les plus récentes
     private func mergeDates(
-        local: [String: [UUID: Date]],
-        remote: [String: [UUID: Date]]
-    ) -> [String: [UUID: Date]] {
-        var merged: [String: [UUID: Date]] = local
+        local: [String: [String: Date]],
+        remote: [String: [String: Date]]
+    ) -> [String: [String: Date]] {
+        var merged: [String: [String: Date]] = local
         
         for (checklistKey, remoteDates) in remote {
             if var localDates = merged[checklistKey] {

@@ -250,19 +250,19 @@ struct QuadStateToggle: View {
                 
                 // Labels des états
                 HStack(spacing: 0) {
-                    Text("☐")
+                    Label("☐", systemImage: "")
                         .frame(width: W/4)
                         .foregroundStyle(labelColor(forSegment: 0, selected: clampedState))
                         .font(.caption2)
-                    Text("◪")
+                    Label("◪", systemImage: "")
                         .frame(width: W/4)
                         .foregroundStyle(labelColor(forSegment: 1, selected: clampedState))
                         .font(.caption2)
-                    Text("☑")
+                    Label("☑", systemImage: "")
                         .frame(width: W/4)
                         .foregroundStyle(labelColor(forSegment: 2, selected: clampedState))
                         .font(.caption2)
-                    Text("⊘")
+                    Label("⊘", systemImage: "")
                         .frame(width: W/4)
                         .foregroundStyle(labelColor(forSegment: 3, selected: clampedState))
                         .font(.caption2)

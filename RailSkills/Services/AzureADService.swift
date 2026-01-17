@@ -9,13 +9,16 @@
 import Foundation
 
 /// Service pour l'authentification Azure AD via Client Credential Flow
+@MainActor
 class AzureADService {
     static let shared = AzureADService()
     
     // Configuration Azure AD (Client Credential Flow)
     // Ces identifiants permettent l'accès automatique à SharePoint
-    private let tenantId = "4a7c8238-5799-4b16-9fc6-9ad8fce5a7d9"
-    private let clientId = "bd394412-97bf-4513-a59f-e023b010dff7"
+    // Configuration Azure AD (Client Credential Flow)
+    // Ces identifiants permettent l'accès automatique à SharePoint
+    private var tenantId: String { BackendConfig.azureTenantId }
+    private var clientId: String { BackendConfig.azureClientId }
     
     private var accessToken: String?
     private var tokenExpiryDate: Date?
@@ -34,6 +37,11 @@ class AzureADService {
     /// Vérifie si l'authentification Azure AD est disponible
     /// Retourne true si le backend est configuré OU si un Client Secret local existe
     var isConfigured: Bool {
+        // En mode local, l'authentification est désactivée
+        if AppConfigurationService.shared.isLocalMode {
+            return false
+        }
+        
         // Backend configuré = on peut obtenir des tokens
         if BackendConfig.isConfigured {
             return true
@@ -47,6 +55,11 @@ class AzureADService {
     /// - Returns: L'access token pour les appels API
     /// - Throws: AzureADError en cas d'erreur
     func getAccessToken() async throws -> String {
+        // En mode local, pas d'accès token
+        if AppConfigurationService.shared.isLocalMode {
+            throw AzureADError.clientSecretNotConfigured // Ou une erreur spécifique "Local Mode"
+        }
+
         // Vérifier si le token est encore valide (avec 5 min de marge)
         if let token = accessToken,
            let expiry = tokenExpiryDate,
@@ -137,6 +150,11 @@ class AzureADService {
     /// - Returns: Les données de la réponse
     /// - Throws: AzureADError en cas d'erreur
     func authenticatedRequest(endpoint: String, method: String = "GET", body: Data? = nil) async throws -> Data {
+        // En mode local, pas de requêtes réseau
+        if AppConfigurationService.shared.isLocalMode {
+            throw AzureADError.networkError
+        }
+
         let token = try await getAccessToken()
         
         // Encoder le chemin pour SharePoint (les chemins avec ":" doivent être encodés)

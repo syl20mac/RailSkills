@@ -41,3 +41,23 @@ git tag -a "${TAG}" -m "${TAG_MESSAGE}"
 echo "✅ Tag ${TAG} créé localement"
 echo "💡 Pour push vers GitHub: git push origin ${TAG}"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

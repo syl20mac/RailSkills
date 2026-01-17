@@ -13,8 +13,8 @@ import Combine
 struct PreloadedDriverData {
     let driverId: UUID
     let progress: Double
-    let stateMap: [UUID: Int]
-    let notesMap: [UUID: String]
+    let stateMap: [String: Int]
+    let notesMap: [String: String]
     let categoryProgress: [UUID: (validated: Int, total: Int)]
     let timestamp: Date
     
@@ -106,12 +106,12 @@ class PreloadService: ObservableObject {
     
     // MARK: - Helpers
     
-    private func calculateProgress(states: [UUID: Int], checklist: Checklist) -> Double {
+    private func calculateProgress(states: [String: Int], checklist: Checklist) -> Double {
         let questions = checklist.items.filter { !$0.isCategory }
         guard !questions.isEmpty else { return 0 }
         
         let validatedCount = questions.filter { question in
-            let state = states[question.id] ?? 0
+            let state = states[question.id.uuidString] ?? 0
             return state == 2 // Validé
         }.count
         
@@ -120,7 +120,7 @@ class PreloadService: ObservableObject {
         return Double(validatedCount) / Double(questions.count)
     }
     
-    private func calculateCategoryProgress(states: [UUID: Int], checklist: Checklist) -> [UUID: (validated: Int, total: Int)] {
+    private func calculateCategoryProgress(states: [String: Int], checklist: Checklist) -> [UUID: (validated: Int, total: Int)] {
         var progress: [UUID: (validated: Int, total: Int)] = [:]
         
         var currentCategory: UUID?
@@ -129,7 +129,7 @@ class PreloadService: ObservableObject {
                 currentCategory = item.id
                 progress[item.id] = (validated: 0, total: 0)
             } else if let categoryId = currentCategory {
-                let state = states[item.id] ?? 0
+                let state = states[item.id.uuidString] ?? 0
                 let current = progress[categoryId] ?? (validated: 0, total: 0)
                 progress[categoryId] = (
                     validated: current.validated + (state == 2 ? 1 : 0),

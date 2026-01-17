@@ -19,7 +19,7 @@ enum LogLevel: String {
 
 /// Système de logging centralisé pour l'application
 struct Logger {
-    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.railskills"
+    private static let subsystem = "com.railskills"
     
     /// Logs une message avec un niveau spécifique
     /// - Parameters:

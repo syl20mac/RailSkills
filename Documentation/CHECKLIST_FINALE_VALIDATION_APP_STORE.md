@@ -71,8 +71,8 @@
 
   Fonctionnalités :
   • Suivi triennal réglementaire (checklist triennale)
-  • Visites périodiques (checklist VP)
-  • Tests d'évaluation (checklist TE)
+  • Validations périodiques (checklist VP)
+  • Trains d'essai (checklist TE)
   • Gestion des conducteurs avec progression détaillée
   • Dashboard avec graphiques triennaux
   • Export/Import de données (JSON, PDF)
@@ -322,4 +322,11 @@ https://syl20mac.github.io/RailSkills-Public/SUPPORT.html
 ---
 
 **Votre app est presque prête ! Il reste principalement des actions de configuration et de test. 🚀**
+
+
+
+
+
+
+
 

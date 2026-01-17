@@ -194,3 +194,23 @@ echo "✅ Tag ${TAG} créé. Push avec: git push origin ${TAG}"
 
 **Cette solution évite complètement les problèmes de sandbox ! ✅**
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

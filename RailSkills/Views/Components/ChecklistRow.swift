@@ -18,8 +18,8 @@ struct ChecklistRow: View {
     let onToggle: (Int) -> Void
     @ObservedObject var vm: ViewModel
     @State private var showingNoteEditor = false
+    @State private var showingExpectedAnswer = false
     @State private var noteText: String = ""
-    @State private var showingExpectedAnswerPopover = false
     
     // État local pour le toggle
     @State private var localState: Int = 0
@@ -135,6 +135,9 @@ struct ChecklistRow: View {
                 }
             )
         }
+        .sheet(isPresented: $showingExpectedAnswer) {
+            expectedAnswerSheet
+        }
     }
 
     @ViewBuilder
@@ -149,33 +152,20 @@ struct ChecklistRow: View {
     private var compactQuestionLayout: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .top, spacing: 6) {
+                HStack(alignment: .top, spacing: 8) {
                     Text(item.title)
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
-                        .multilineTextAlignment(.leading)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            showingExpectedAnswerPopover = true
-                        }
+                        .accessibilityAddTraits(.isHeader)
                     
-                    Button {
-                        showingExpectedAnswerPopover = true
-                    } label: {
-                        Image(systemName: "info.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(SNCFColors.ceruleen)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 2)
+                    Image(systemName: "info.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(SNCFColors.ceruleen)
                 }
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityLabel("Question: \(item.title)")
-                .accessibilityHint("Double-tapez pour voir les réponses attendues")
-                .sheet(isPresented: $showingExpectedAnswerPopover) {
-                    expectedAnswerSheet
+                .onTapGesture {
+                    showingExpectedAnswer = true
                 }
                 
                 if let evalDate = vm.evaluationDate(for: item) {
@@ -213,34 +203,21 @@ struct ChecklistRow: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(alignment: .top, spacing: 6) {
+                    HStack(alignment: .top, spacing: 8) {
                         Text(item.title)
                             .font(.title3)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
                             .lineSpacing(4)
                             .fixedSize(horizontal: false, vertical: true)
-                            .multilineTextAlignment(.leading)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                showingExpectedAnswerPopover = true
-                            }
+                            .accessibilityAddTraits(.isHeader)
                         
-                        Button {
-                            showingExpectedAnswerPopover = true
-                        } label: {
-                            Image(systemName: "info.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(SNCFColors.ceruleen)
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, 2)
+                        Image(systemName: "info.circle.fill")
+                            .font(.subheadline)
+                            .foregroundStyle(SNCFColors.ceruleen)
                     }
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityLabel("Question: \(item.title)")
-                    .accessibilityHint("Double-tapez pour voir les réponses attendues")
-                    .popover(isPresented: $showingExpectedAnswerPopover) {
-                        expectedAnswerPopover
+                    .onTapGesture {
+                        showingExpectedAnswer = true
                     }
                     
                     if let evalDate = vm.evaluationDate(for: item) {
@@ -421,137 +398,6 @@ struct ChecklistRow: View {
         return false
     }
     
-    /// Indique si la question a des réponses attendues (dans les notes de la checklist)
-    private var hasExpectedAnswer: Bool {
-        if let notes = item.notes, !notes.isEmpty {
-            return true
-        }
-        return false
-    }
-    
-    /// Retourne les réponses attendues depuis les notes de la checklist
-    private var expectedAnswer: String {
-        if let notes = item.notes, !notes.isEmpty {
-            return notes
-        }
-        return "Aucune réponse attendue n'a été spécifiée pour cette question.\n\nLes réponses attendues peuvent être ajoutées lors de la création ou de l'import de la checklist."
-    }
-    
-    /// Popover affichant les réponses attendues (pour iPad)
-    @ViewBuilder
-    private var expectedAnswerPopover: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // En-tête
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .font(.title2)
-                    .foregroundStyle(SNCFColors.safran)
-                
-                Text("Réponses attendues")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.primary)
-                
-                Spacer()
-                
-                Button {
-                    showingExpectedAnswerPopover = false
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            
-            Divider()
-            
-            // Contenu
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    if hasExpectedAnswer {
-                        Text(expectedAnswer)
-                            .font(.body)
-                            .foregroundStyle(.primary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Image(systemName: "info.circle")
-                                .font(.title2)
-                                .foregroundStyle(.secondary)
-                            
-                            Text(expectedAnswer)
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                }
-            }
-            .frame(maxHeight: 300)
-        }
-        .padding(20)
-        .frame(width: 350)
-    }
-    
-    /// Sheet affichant les réponses attendues (pour iPhone)
-    @ViewBuilder
-    private var expectedAnswerSheet: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 20) {
-                // Icône et titre
-                HStack(spacing: 12) {
-                    Image(systemName: "lightbulb.fill")
-                        .font(.title)
-                        .foregroundStyle(SNCFColors.safran)
-                    
-                    Text("Réponses attendues")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                }
-                .padding(.top, 20)
-                
-                Divider()
-                
-                // Contenu
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        if hasExpectedAnswer {
-                            Text(expectedAnswer)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        } else {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Image(systemName: "info.circle")
-                                    .font(.title2)
-                                    .foregroundStyle(.secondary)
-                                
-                                Text(expectedAnswer)
-                                    .font(.body)
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                        }
-                    }
-                }
-            }
-            .padding()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") {
-                        showingExpectedAnswerPopover = false
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-    }
-    
     private func getCategoryProgressText(for categoryItem: ChecklistItem) -> String {
         guard categoryItem.isCategory, let cl = vm.store.checklist else { return "" }
         
@@ -588,6 +434,131 @@ struct ChecklistRow: View {
         guard totalQuestions > 0 else { return false }
         let completedQuestions = questions.filter { vm.state(for: $0) == 2 }.count
         return completedQuestions == totalQuestions
+    }
+    
+    // MARK: - Expected Answer
+    
+    /// Vérifie si la question a des réponses attendues
+    private var hasExpectedAnswer: Bool {
+        if let notes = item.notes, !notes.isEmpty {
+            return true
+        }
+        return false
+    }
+    
+    /// Retourne les réponses attendues pour une question
+    private var expectedAnswer: String {
+        if let notes = item.notes, !notes.isEmpty {
+            return notes
+        }
+        return "Aucune réponse attendue n'a été spécifiée pour cette question."
+    }
+    
+    /// Sheet affichant les réponses attendues
+    private var expectedAnswerSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Icône et titre
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(SNCFColors.safran.opacity(0.15))
+                                .frame(width: 56, height: 56)
+                            
+                            Image(systemName: "lightbulb.fill")
+                                .font(.title)
+                                .foregroundStyle(SNCFColors.safran)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Réponses attendues")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.primary)
+                            
+                            Text("Critères de validation")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // Question concernée
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Question :")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                        
+                        Text(item.title)
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(UIColor.secondarySystemBackground))
+                    )
+                    
+                    // Réponses attendues
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Réponses attendues :")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                        
+                        if hasExpectedAnswer {
+                            Text(expectedAnswer)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Image(systemName: "info.circle")
+                                    .font(.title2)
+                                    .foregroundStyle(.secondary)
+                                
+                                Text("Aucune réponse attendue n'a été spécifiée pour cette question.")
+                                    .font(.body)
+                                    .foregroundStyle(.secondary)
+                                
+                                Text("Les réponses attendues peuvent être ajoutées lors de la création ou de la modification de la checklist dans l'éditeur.")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(SNCFColors.safran.opacity(0.08))
+                    )
+                    
+                    Spacer()
+                }
+                .padding(24)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Fermer") {
+                        showingExpectedAnswer = false
+                    }
+                }
+            }
+        }
+        .presentationDetents([.height(400), .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled)
     }
 }
 

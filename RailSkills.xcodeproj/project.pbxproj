@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXFileReference section */
@@ -21,10 +21,8 @@
 /* Begin PBXFrameworksBuildPhase section */
 		4E8C12A42EE03FD50037613D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -55,18 +53,13 @@
 				4E8C12A32EE03FD50037613D /* Sources */,
 				4E8C12A42EE03FD50037613D /* Frameworks */,
 				4E8C12A52EE03FD50037613D /* Resources */,
-				4EFDF6232EEAACDF0079CAA2 /* ShellScript */,
 			);
 			buildRules = (
-			);
-			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
 				4E8C12A92EE03FD50037613D /* RailSkills */,
 			);
 			name = RailSkills;
-			packageProductDependencies = (
-			);
 			productName = RailSkills;
 			productReference = 4E8C12A72EE03FD50037613D /* RailSkills.app */;
 			productType = "com.apple.product-type.application";
@@ -95,7 +88,7 @@
 			);
 			mainGroup = 4E8C129E2EE03FD50037613D;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = 4E8C12A82EE03FD50037613D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -108,47 +101,21 @@
 /* Begin PBXResourcesBuildPhase section */
 		4E8C12A52EE03FD50037613D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		4EFDF6232EEAACDF0079CAA2 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 0;
-			buildActionMask = 8;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/.git/tag-created",
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-			shellPath = /bin/sh;
-			shellScript = "# Auto-tag version lors d'un build Release Archive\nif [ \"${CONFIGURATION}\" != \"Release\" ]; then\n    # Créer le fichier de sortie même si on skip pour éviter les ré-exécutions\n    touch \"${SRCROOT}/.git/tag-created\" 2>/dev/null || true\n    exit 0\nfi\n\n# Récupérer la version depuis Info.plist\nVERSION=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleShortVersionString\" \"${PROJECT_DIR}/Configs/Info.plist\")\nBUILD_NUMBER=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleVersion\" \"${PROJECT_DIR}/Configs/Info.plist\")\nTAG=\"v${VERSION}\"\n\necho \"🏷️  Création du tag ${TAG}...\"\n\n# Vérifier si on est dans un dépôt Git\nif ! git rev-parse --git-dir > /dev/null 2>&1; then\n    echo \"⚠️  Pas un dépôt Git. Skip.\"\n    # Créer le fichier de sortie pour éviter les ré-exécutions\n    touch \"${SRCROOT}/.git/tag-created\" 2>/dev/null || true\n    exit 0\nfi\n\n# Vérifier si le tag existe déjà\nif git rev-parse \"${TAG}\" >/dev/null 2>&1; then\n    echo \"ℹ️  Tag ${TAG} existe déjà. Skip.\"\n    # Créer le fichier de sortie pour éviter les ré-exécutions\n    touch \"${SRCROOT}/.git/tag-created\" 2>/dev/null || true\n    exit 0\nfi\n\n# Créer le tag\ncd \"${SRCROOT}\"\ngit tag -a \"${TAG}\" -m \"Version ${VERSION} (Build ${BUILD_NUMBER}) - Auto-tagged from Xcode\"\n\n# Créer le fichier de sortie pour que Xcode sache que le script a été exécuté\ntouch \"${SRCROOT}/.git/tag-created\" 2>/dev/null || true\n\necho \"✅ Tag ${TAG} créé localement\"\necho \"💡 Pour push vers GitHub: git push origin ${TAG}\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4E8C12A32EE03FD50037613D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		4E8C12B02EE03FD50037613D /* Debug */ = {
+		4E8C12B02EE03FD50037613D /* Debug configuration for PBXProject "RailSkills" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -201,7 +168,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -212,7 +179,7 @@
 			};
 			name = Debug;
 		};
-		4E8C12B12EE03FD50037613D /* Release */ = {
+		4E8C12B12EE03FD50037613D /* Release configuration for PBXProject "RailSkills" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -259,7 +226,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -269,24 +236,23 @@
 			};
 			name = Release;
 		};
-		4E8C12B32EE03FD50037613D /* Debug */ = {
+		4E8C12B32EE03FD50037613D /* Debug configuration for PBXNativeTarget "RailSkills" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UD44R8K7U8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Configs/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ctt.RailSkills;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.railskills.syl20.org.RailSkills;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -298,24 +264,23 @@
 			};
 			name = Debug;
 		};
-		4E8C12B42EE03FD50037613D /* Release */ = {
+		4E8C12B42EE03FD50037613D /* Release configuration for PBXNativeTarget "RailSkills" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UD44R8K7U8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Configs/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2;
-				PRODUCT_BUNDLE_IDENTIFIER = ctt.RailSkills;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.railskills.syl20.org.RailSkills;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -333,19 +298,17 @@
 		4E8C12A22EE03FD50037613D /* Build configuration list for PBXProject "RailSkills" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				4E8C12B02EE03FD50037613D /* Debug */,
-				4E8C12B12EE03FD50037613D /* Release */,
+				4E8C12B02EE03FD50037613D /* Debug configuration for PBXProject "RailSkills" */,
+				4E8C12B12EE03FD50037613D /* Release configuration for PBXProject "RailSkills" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		4E8C12B22EE03FD50037613D /* Build configuration list for PBXNativeTarget "RailSkills" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				4E8C12B32EE03FD50037613D /* Debug */,
-				4E8C12B42EE03FD50037613D /* Release */,
+				4E8C12B32EE03FD50037613D /* Debug configuration for PBXNativeTarget "RailSkills" */,
+				4E8C12B42EE03FD50037613D /* Release configuration for PBXNativeTarget "RailSkills" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */

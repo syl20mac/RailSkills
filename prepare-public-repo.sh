@@ -109,3 +109,23 @@ echo "   - Save"
 echo ""
 echo "5. Attendez quelques minutes, puis utilisez les URLs dans App Store Connect"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

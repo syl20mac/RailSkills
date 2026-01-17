@@ -23,6 +23,8 @@ struct ChecklistTabView: View {
     @State private var checklistFilter: ChecklistFilter = .all
     @State private var collapsedAllCompact: Bool = true
     @State private var searchDebounceTask: Task<Void, Never>?
+    @State private var showingQuickEvalMode = false
+    @State private var showingShareSheet = false
     
     /// Checklist actuelle selon le type
     private var currentChecklist: Checklist? {
@@ -36,15 +38,25 @@ struct ChecklistTabView: View {
     
     @ViewBuilder
     var body: some View {
-        if hSizeClass == .compact {
-            NavigationStack {
-                compactMainList
+        Group {
+            if hSizeClass == .compact {
+                NavigationStack {
+                    compactMainList
+                }
+            } else {
+                NavigationSplitView {
+                    sidebarView
+                } detail: {
+                    detailView
+                }
             }
-        } else {
-            NavigationSplitView {
-                sidebarView
-            } detail: {
-                detailView
+        }
+        .fullScreenCover(isPresented: $showingQuickEvalMode) {
+            QuickEvaluationMode(vm: vm, checklistType: checklistType)
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let checklist = currentChecklist {
+                ChecklistExportView(checklist: checklist, checklistType: checklistType)
             }
         }
     }
@@ -53,6 +65,7 @@ struct ChecklistTabView: View {
     
     private var sidebarView: some View {
         List(selection: $selectedCategoryId) {
+            
             driverSection
             headerSection
             categoriesSection
@@ -389,6 +402,22 @@ struct ChecklistTabView: View {
             } label: {
                 Label("Ajouter un conducteur", systemImage: "person.badge.plus")
             }
+            
+            if currentChecklist != nil && canInteractWithChecklist {
+                Button {
+                    showingQuickEvalMode = true
+                } label: {
+                    Label("Mode évaluation rapide", systemImage: "bolt.fill")
+                }
+            }
+            
+            if currentChecklist != nil {
+                Button {
+                    showingShareSheet = true
+                } label: {
+                    Label("Partager", systemImage: "square.and.arrow.up")
+                }
+            }
         } label: {
             Image(systemName: "ellipsis.circle")
                 .frame(width: 44, height: 44)
@@ -577,4 +606,24 @@ struct ChecklistTabView: View {
         return clamped >= 1 ? SNCFColors.menthe : SNCFColors.ceruleen
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

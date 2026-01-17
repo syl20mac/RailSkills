@@ -195,14 +195,8 @@ struct ChecklistImportWelcomeView: View {
         isDownloading = true
         Task {
             let success: Bool
-            switch checklistType {
-            case .triennale:
-                success = await vm.store.forceDownloadChecklist()
-            case .vp:
-                success = await vm.store.forceDownloadChecklistVP()
-            case .te:
-                success = await vm.store.forceDownloadChecklistTE()
-            }
+            // La méthode unifiée forceDownloadChecklist gère le téléchargement de la checklist par défaut
+            success = await vm.store.forceDownloadChecklist()
             
             await MainActor.run {
                 isDownloading = false

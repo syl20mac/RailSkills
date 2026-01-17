@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct CTTProfileView: View {
-    @StateObject private var identityService = SNCFIdentityService.shared
+    @StateObject private var identityService = OrganizationIdentityService.shared
     @EnvironmentObject private var toastManager: ToastNotificationManager
     
     @State private var sncfIdentity: String = ""
@@ -24,7 +24,7 @@ struct CTTProfileView: View {
                     HStack {
                         Image(systemName: "person.circle.fill")
                             .font(.title2)
-                            .foregroundStyle(SNCFColors.ceruleen)
+                            .foregroundStyle(Color.blue)
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(identityService.sncfName)
@@ -44,7 +44,7 @@ struct CTTProfileView: View {
                             sncfName = identityService.sncfName
                         }) {
                             Image(systemName: "pencil")
-                                .foregroundStyle(SNCFColors.ceruleen)
+                                .foregroundStyle(Color.blue)
                         }
                     }
                     .padding(.vertical, 8)
@@ -62,13 +62,13 @@ struct CTTProfileView: View {
                     }
                 } else {
                     // Formulaire de saisie/modification
-                    TextField("Identifiant SNCF (email ou ID)", text: $sncfIdentity)
+                    TextField("Identifiant (email ou ID)", text: $sncfIdentity)
                         .textContentType(.emailAddress)
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
                         .font(.avenirBody)
                     
-                    TextField("Nom complet du CTT", text: $sncfName)
+                    TextField("Nom complet", text: $sncfName)
                         .textContentType(.name)
                         .font(.avenirBody)
                     
@@ -78,18 +78,18 @@ struct CTTProfileView: View {
                         }) {
                             Text("Annuler")
                                 .font(.avenirBody)
-                                .foregroundStyle(SNCFColors.corail)
+                                .foregroundStyle(Color.red)
                         }
                     }
                 }
             } header: {
-                Text("Profil CTT")
+                Text("Profil")
             } footer: {
                 if identityService.isAuthenticated && !isEditing {
                     Text("Votre identité est configurée. Vous ne verrez que les conducteurs et checklists qui vous sont attribués.")
                         .font(.avenirCaption)
                 } else {
-                    Text("Saisissez votre identifiant SNCF (email professionnel ou ID interne) et votre nom complet. Cette information permet d'isoler vos données des autres CTT.")
+                    Text("Saisissez votre identifiant organisation (email professionnel ou ID interne) et votre nom complet. Cette information permet d'isoler vos données.")
                         .font(.avenirCaption)
                 }
             }
@@ -104,10 +104,10 @@ struct CTTProfileView: View {
                             Image(systemName: "person.badge.key.fill")
                                 .font(.title3)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("S'authentifier avec SNCF_ID")
+                                Text("S'authentifier avec l'Organisation")
                                     .font(.avenirHeadline)
                                     .foregroundStyle(.primary)
-                                Text("Authentification automatique via le SDK SNCF_ID")
+                                Text("Authentification automatique")
                                     .font(.avenirCaption)
                                     .foregroundStyle(.secondary)
                             }
@@ -120,9 +120,9 @@ struct CTTProfileView: View {
                     }
                     .disabled(identityService.isAuthenticating)
                 } header: {
-                    Text("Authentification SNCF_ID")
+                    Text("Authentification Organisation")
                 } footer: {
-                    Text("Utilisez votre compte SNCF_ID pour vous authentifier automatiquement. Plus besoin de saisir manuellement votre identifiant.")
+                    Text("Utilisez votre compte professionnel pour vous authentifier automatiquement.")
                         .font(.avenirCaption)
                 }
             }
@@ -133,10 +133,10 @@ struct CTTProfileView: View {
                     if identityService.isUsingSDK {
                         HStack {
                             Image(systemName: "checkmark.shield.fill")
-                                .foregroundStyle(SNCFColors.menthe)
-                            Text("Authentifié via SNCF_ID")
+                                .foregroundStyle(Color.green)
+                            Text("Authentifié via Organisation")
                                 .font(.avenirCaption)
-                                .foregroundStyle(SNCFColors.menthe)
+                                .foregroundStyle(Color.green)
                         }
                     }
                     
@@ -145,14 +145,14 @@ struct CTTProfileView: View {
                     }) {
                         HStack {
                             Image(systemName: "person.crop.circle.badge.minus")
-                            Text("Déconnecter le profil CTT")
+                            Text("Déconnecter le profil")
                                 .font(.avenirBody)
                         }
                     }
                 } footer: {
                     Text(identityService.isUsingSDK ? 
-                         "Votre identité provient du SDK SNCF_ID. La déconnexion vous déconnectera du SDK et n'effacera pas vos données locales." :
-                         "La déconnexion n'efface pas vos données locales, mais vous ne pourrez plus accéder aux données filtrées par votre identité SNCF.")
+                         "Votre identité provient du système d'organisation. La déconnexion vous déconnectera et n'effacera pas vos données locales." :
+                         "La déconnexion n'efface pas vos données locales, mais vous ne pourrez plus accéder aux données filtrées par votre identité.")
                         .font(.avenirCaption)
                 }
             } else if !identityService.isSDKAvailable || (!identityService.isAuthenticated && !identityService.isAuthenticating) {
@@ -174,8 +174,8 @@ struct CTTProfileView: View {
                     Text(identityService.isSDKAvailable ? "Saisie manuelle" : "Configuration manuelle")
                 } footer: {
                     Text(identityService.isSDKAvailable ? 
-                         "Vous pouvez saisir manuellement votre identifiant SNCF si vous préférez ne pas utiliser l'authentification SDK." :
-                         "Saisissez votre identifiant SNCF (email professionnel ou ID interne) et votre nom complet.")
+                         "Vous pouvez saisir manuellement votre identifiant si vous préférez ne pas utiliser l'authentification automatique." :
+                         "Saisissez votre identifiant organisation (email professionnel ou ID interne) et votre nom complet.")
                         .font(.avenirCaption)
                 }
             }
@@ -185,15 +185,15 @@ struct CTTProfileView: View {
                 Section {
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(SNCFColors.corail)
+                            .foregroundStyle(Color.red)
                         Text(error)
                             .font(.avenirCaption)
-                            .foregroundStyle(SNCFColors.corail)
+                            .foregroundStyle(Color.red)
                     }
                 }
             }
         }
-        .navigationTitle("Profil CTT")
+        .navigationTitle("Profil")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if identityService.isAuthenticated {
@@ -208,13 +208,13 @@ struct CTTProfileView: View {
             switch result {
             case .success:
                 isEditing = false
-                toastManager.show("Authentification SNCF_ID réussie", type: .success)
+                toastManager.show("Authentification réussie", type: .success)
                 
             case .failure(let error):
                 if let sncfError = error as? SNCFIDError {
                     switch sncfError {
                     case .sdkNotAvailable:
-                        toastManager.show("Le SDK SNCF_ID n'est pas disponible. Utilisez la saisie manuelle.", type: .warning)
+                        toastManager.show("L'authentification automatique n'est pas disponible. Utilisez la saisie manuelle.", type: .warning)
                     case .authenticationCancelled:
                         // Ne pas afficher d'erreur si l'utilisateur a annulé
                         break
@@ -237,13 +237,13 @@ struct CTTProfileView: View {
             return
         }
         
-        identityService.setIdentity(identity: trimmedIdentity, name: trimmedName)
+        identityService.setIdentity(userId: trimmedIdentity, name: trimmedName)
         isEditing = false
         
-        let message = identityService.isAuthenticated ? "Profil CTT mis à jour avec succès" : "Profil CTT enregistré avec succès"
+        let message = identityService.isAuthenticated ? "Profil mis à jour avec succès" : "Profil enregistré avec succès"
         toastManager.show(message, type: .success)
         
-        Logger.info("Profil CTT sauvegardé: \(trimmedName) (\(trimmedIdentity))", category: "CTTProfile")
+        Logger.info("Profil sauvegardé: \(trimmedName) (\(trimmedIdentity))", category: "Profile")
     }
     
     private func cancelEditing() {
@@ -258,8 +258,8 @@ struct CTTProfileView: View {
         sncfName = ""
         isEditing = false
         
-        toastManager.show("Profil CTT déconnecté", type: .info)
-        Logger.info("Profil CTT déconnecté", category: "CTTProfile")
+        toastManager.show("Profil déconnecté", type: .info)
+        Logger.info("Profil déconnecté", category: "Profile")
     }
 }
 

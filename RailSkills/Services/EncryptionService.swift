@@ -191,6 +191,12 @@ enum EncryptionService {
     /// - Parameter data: Les données à chiffrer
     /// - Returns: Les données chiffrées avec le nonce préfixé, ou nil en cas d'erreur
     static func encrypt(_ data: Data) -> Data? {
+        // MDRI Modification: Désactivation du chiffrement sur demande (17/01/2025)
+        // On retourne les données en clair directement
+        Logger.info("Chiffrement désactivé - retour des données en clair", category: "EncryptionService")
+        return data
+        
+        /* Code original désactivé
         let key = getEncryptionKey()
         
         do {
@@ -212,16 +218,31 @@ enum EncryptionService {
             Logger.error("Erreur lors du chiffrement: \(error.localizedDescription)", category: "EncryptionService")
             return nil
         }
+        */
     }
     
     /// Déchiffre des données avec AES-GCM
     /// - Parameter encryptedData: Les données chiffrées (avec nonce préfixé)
     /// - Returns: Les données déchiffrées ou nil en cas d'erreur
     static func decrypt(_ encryptedData: Data) -> Data? {
+        // MDRI Modification: Support des données en clair (17/01/2025)
+        // Vérifier d'abord si les données sont chiffrées
+        if !isEncrypted(encryptedData) {
+            Logger.info("Données non chiffrées détectées, retour direct", category: "EncryptionService")
+            return encryptedData
+        }
+        
         let key = getEncryptionKey()
         
         // Vérifier la taille minimale
         guard encryptedData.count >= 28 else {
+            // Si c'est trop court et pas détecté comme chiffré, c'est peut-être juste un petit fichier texte/json
+            // On tente de le retourner tel quel
+            if let _ = String(data: encryptedData, encoding: .utf8) {
+                Logger.info("Petit fichier texte détecté, retour direct", category: "EncryptionService")
+                return encryptedData
+            }
+            
             Logger.error("Données trop courtes pour être déchiffrées (\(encryptedData.count) bytes < 28 bytes minimum)", category: "EncryptionService")
             return nil
         }
@@ -299,7 +320,7 @@ enum EncryptionService {
         // Tenter de parser comme JSON UTF-8 pour détecter si c'est du texte clair
         // Si c'est du JSON valide, ce n'est probablement pas chiffré
         if let text = String(data: data, encoding: .utf8),
-           text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{"),
+           (text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{") || text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("[")),
            (try? JSONSerialization.jsonObject(with: data)) != nil {
             Logger.debug("Données détectées comme JSON valide (non chiffré)", category: "EncryptionService")
             return false
@@ -308,7 +329,7 @@ enum EncryptionService {
         // Si ce n'est pas du JSON valide et que la taille est suffisante, probablement chiffré
         // Vérifier aussi que ce n'est pas du texte UTF-8 valide qui commence par autre chose que '{'
         if let text = String(data: data, encoding: .utf8),
-           !text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{") {
+           !text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("{") && !text.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("[") {
             // C'est du texte mais pas du JSON, probablement chiffré
             Logger.debug("Données détectées comme probablement chiffrées (texte non-JSON, \(data.count) bytes)", category: "EncryptionService")
             return true

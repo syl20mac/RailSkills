@@ -34,30 +34,20 @@ struct ModernCard<Content: View>: View {
             .padding(padding)
             .background(
                 ZStack {
-                    // Fond principal avec effet material iOS 18 (Liquid Glass)
+                    // Fond principal avec effet material
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .fill(elevated ? .ultraThickMaterial : .regularMaterial)
+                        .fill(.regularMaterial)
                     
-                    // Bordure subtile adaptative avec gradient iOS 18
+                    // Bordure subtile en light mode
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [
-                                    Color.primary.opacity(elevated ? 0.15 : 0.08),
-                                    Color.primary.opacity(elevated ? 0.08 : 0.04)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: elevated ? 1.5 : 1
-                        )
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 }
             )
             .shadow(
-                color: .black.opacity(shadow ? (elevated ? 0.1 : 0.06) : 0),
-                radius: elevated ? 20 : 8,
+                color: .black.opacity(shadow ? 0.06 : 0),
+                radius: elevated ? 16 : 8,
                 x: 0,
-                y: elevated ? 10 : 4
+                y: elevated ? 8 : 4
             )
     }
 }
@@ -87,5 +77,6 @@ struct ModernCard<Content: View>: View {
     .padding()
     .background(Color.gray.opacity(0.1))
 }
+
 
 

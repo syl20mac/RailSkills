@@ -87,29 +87,25 @@ struct ImportDriversFromSharePointView: View {
     
     private func importFromSharePoint() {
         isImporting = true
-        let driversCountBefore = vm.store.drivers.count
         
         Task {
-            // Utiliser la synchronisation bidirectionnelle pour récupérer les modifications
-            await vm.store.syncDriversBidirectional()
-            
-            await MainActor.run {
-                let driversCountAfter = vm.store.drivers.count
-                let newDriversCount = driversCountAfter - driversCountBefore
+            do {
+                // Utiliser la synchronisation bidirectionnelle pour récupérer les modifications
+                let resultMessage = try await vm.store.syncDriversBidirectional()
                 
-                if newDriversCount > 0 {
-                    importMessage = "\(newDriversCount) nouveau(x) conducteur(s) récupéré(s) depuis SharePoint. Total: \(driversCountAfter) conducteur(s)."
+                await MainActor.run {
+                    importMessage = resultMessage
                     importSuccess = true
-                } else if driversCountAfter > 0 {
-                    importMessage = "Synchronisation réussie. Aucun nouveau conducteur détecté. Total: \(driversCountAfter) conducteur(s)."
-                    importSuccess = true
-                } else {
-                    importMessage = "Aucun conducteur trouvé dans SharePoint. Vérifiez que les conducteurs ont été créés correctement."
-                    importSuccess = false
+                    showingResult = true
+                    isImporting = false
                 }
-                
-                showingResult = true
-                isImporting = false
+            } catch {
+                await MainActor.run {
+                    importMessage = "Erreur lors de l'import: \(error.localizedDescription)"
+                    importSuccess = false
+                    showingResult = true
+                    isImporting = false
+                }
             }
         }
     }

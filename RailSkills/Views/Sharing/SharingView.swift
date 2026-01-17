@@ -246,7 +246,8 @@ struct SharingView: View {
                         .foregroundStyle(SNCFColors.ceruleen)
                 Picker("Conducteur", selection: $selectedDriverIndex) {
                     ForEach(vm.store.drivers.indices, id: \.self) { i in
-                        Text(vm.store.drivers[i].name).tag(i)
+                        // Affiche le prénom et le nom du conducteur
+                        Text(vm.store.drivers[i].fullName).tag(i)
                     }
                 }
                 .pickerStyle(.menu)
@@ -777,7 +778,8 @@ struct SharingView: View {
                         Image(systemName: "person")
                             .foregroundStyle(SNCFColors.ceruleen)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(vm.store.drivers[i].name)
+                            // Affiche le prénom et le nom du conducteur
+                            Text(vm.store.drivers[i].fullName)
                                 .font(.headline)
                             if let lastEval = vm.store.drivers[i].lastEvaluation {
                                 Text("Dernier suivi : \(DateFormatHelper.formatDate(lastEval))")
@@ -1074,7 +1076,7 @@ struct SharingView: View {
         
         let checklistTitle = checklist.title
         let stateMap = driver.checklistStates[checklistTitle] ?? [:]
-        let checkedCount = questions.filter { stateMap[$0.id] == 2 }.count
+        let checkedCount = questions.filter { stateMap[$0.id.uuidString] == 2 }.count
         
         return Double(checkedCount) / Double(questions.count)
     }

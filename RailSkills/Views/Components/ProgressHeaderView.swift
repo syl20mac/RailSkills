@@ -2,7 +2,7 @@
 //  ProgressHeaderView.swift
 //  RailSkills
 //
-//  Vue de l'en-tête avec progression globale
+//  Vue de l'en-tête avec progression globale - Version améliorée UX
 //
 
 import SwiftUI
@@ -13,47 +13,102 @@ struct ProgressHeaderView: View {
     let checklist: Checklist?
     let driver: DriverRecord?
     
+    // Animation d'entrée
+    @State private var isAnimating = false
+    
     var body: some View {
         if let checklist = checklist, !checklist.items.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
                 progressRow
                 
                 if let driver = driver {
                     triennialInfo(driver: driver)
                 }
             }
-            .padding()
+            .padding(20)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 4)
             )
             .accessibilityElement(children: .contain)
             .accessibilityLabel(accessibilityLabel)
+            .onAppear {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    isAnimating = true
+                }
+            }
         }
     }
     
     private var progressRow: some View {
-        HStack(spacing: 18) {
-            CircularProgressView(progress: progress, size: 56)
+        HStack(spacing: 20) {
+            // Utilisation du nouveau composant EnhancedCircularProgressView
+            EnhancedCircularProgressView(progress: progress, size: 64)
                 .accessibilityLabel("Progression globale")
                 .accessibilityValue("\(Int(progress * 100)) pour cent")
             
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Progression")
                         .font(.headline)
+                        .fontWeight(.semibold)
                     Spacer()
                     Text("\(Int(progress * 100))%")
-                        .font(.headline)
-                        .foregroundStyle(Color.forState(2))
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundStyle(progressColor)
                 }
                 
-                ProgressView(value: progress)
-                    .tint(Color.forState(2))
-                    .animation(.easeInOut(duration: 0.35), value: progress)
-                    .accessibilityValue("\(Int(progress * 100)) pour cent complété")
+                // Barre de progression améliorée avec dégradé
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // Fond
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.15))
+                        
+                        // Progression avec dégradé
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: progressGradientColors,
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: geometry.size.width * progress)
+                            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: progress)
+                    }
+                }
+                .frame(height: 8)
+                .accessibilityValue("\(Int(progress * 100)) pour cent complété")
             }
+        }
+    }
+    
+    // Couleur selon la progression
+    private var progressColor: Color {
+        if progress >= 1.0 {
+            return SNCFColors.menthe
+        } else if progress >= 0.7 {
+            return SNCFColors.ceruleen
+        } else if progress >= 0.4 {
+            return SNCFColors.safran
+        } else {
+            return SNCFColors.corail
+        }
+    }
+    
+    // Dégradé selon la progression
+    private var progressGradientColors: [Color] {
+        if progress >= 1.0 {
+            return [SNCFColors.menthe, SNCFColors.vertEau]
+        } else if progress >= 0.7 {
+            return [SNCFColors.ceruleen, SNCFColors.bleuHorizon]
+        } else if progress >= 0.4 {
+            return [SNCFColors.safran, SNCFColors.ambre]
+        } else {
+            return [SNCFColors.corail, SNCFColors.peche]
         }
     }
     

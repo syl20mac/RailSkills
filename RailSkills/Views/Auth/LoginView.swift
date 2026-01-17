@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct LoginView: View {
     @StateObject private var authService = WebAuthService.shared
@@ -27,9 +28,9 @@ struct LoginView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Fond avec gradient SNCF
+                // Fond dégradé générique
                 LinearGradient(
-                    colors: [SNCFColors.ceruleen.opacity(0.1), SNCFColors.lavande.opacity(0.1)],
+                    colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -52,7 +53,7 @@ struct LoginView: View {
                             VStack(spacing: 24) {
                                 ModernTextField(
                                     title: "Email",
-                                    placeholder: "votre.email@sncf.fr",
+                                    placeholder: "email@organisation.com",
                                     text: $email,
                                     icon: "envelope.fill",
                                     keyboardType: .emailAddress
@@ -87,7 +88,7 @@ struct LoginView: View {
                                         Text(error)
                                             .font(.caption)
                                     }
-                                    .foregroundColor(SNCFColors.corail)
+                                    .foregroundColor(.red)
                                     .frame(maxWidth: .infinity, alignment: .center)
                                 }
                             }
@@ -100,8 +101,8 @@ struct LoginView: View {
                                 HapticFeedbackManager.shared.buttonPress()
                                 showingForgotPassword = true
                             }
-                            .font(.avenirCaption)
-                            .foregroundStyle(SNCFColors.ceruleen)
+                            .font(.caption) // .avenirCaption remplacé
+                            .foregroundStyle(.blue)
                             
                             Spacer()
                             
@@ -109,31 +110,10 @@ struct LoginView: View {
                                 HapticFeedbackManager.shared.buttonPress()
                                 showingRegister = true
                             }
-                            .font(.avenirCaption)
-                            .foregroundStyle(SNCFColors.ceruleen)
+                            .font(.caption) // .avenirCaption remplacé
+                            .foregroundStyle(.blue)
                         }
                         .padding(.horizontal, 24)
-                        
-                        // Bouton mode démonstration (pour les reviewers Apple)
-                        Button {
-                            HapticFeedbackManager.shared.buttonPress()
-                            Task {
-                                await handleDemoMode()
-                            }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "play.circle.fill")
-                                Text("Mode démonstration")
-                            }
-                            .font(.subheadline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(SNCFColors.menthe)
-                            .cornerRadius(12)
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
                     }
                     .padding(.vertical, 40)
                 }
@@ -215,21 +195,6 @@ struct LoginView: View {
         }
     }
     
-    /// Active le mode démonstration pour les reviewers Apple
-    private func handleDemoMode() async {
-        HapticFeedbackManager.shared.actionSuccess()
-        
-        // Activer le mode démo
-        await authService.enableDemoMode()
-        
-        toastManager.show("Mode démonstration activé", type: .success)
-        Logger.success("Mode démonstration activé pour les reviewers Apple", category: "LoginView")
-        
-        // Redémarrer l'app pour charger les données de démo
-        // Note: En production, vous pourriez vouloir recharger le Store ici
-        // Pour l'instant, le Store chargera automatiquement les données au prochain démarrage
-    }
-    
 }
 
 // MARK: - Register Sheet
@@ -251,16 +216,20 @@ struct RegisterSheet: View {
             Form {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("votre.email@sncf.fr", text: $inputEmail)
+                        TextField("email@organisation.com", text: $inputEmail)
                             .textContentType(.emailAddress)
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .autocorrectionDisabled()
                             .onChange(of: inputEmail) { _, newValue in
-                                // Valider l'email en temps réel
+                                    // Valider l'email en temps réel (générique)
                                 if !newValue.isEmpty {
-                                    let validation = newValue.isValidSNCFEmail()
-                                    emailError = validation.errorMessage
+                                    let isValid = newValue.contains("@") && newValue.split(separator: "@").last?.contains(".") == true
+                                    if !isValid {
+                                        emailError = "Format d'email invalide"
+                                    } else {
+                                        emailError = nil
+                                    }
                                 } else {
                                     emailError = nil
                                 }
@@ -270,8 +239,8 @@ struct RegisterSheet: View {
                         HStack(spacing: 4) {
                             Image(systemName: "lock.fill")
                                 .font(.caption2)
-                                .foregroundStyle(SNCFColors.ceruleen)
-                            Text("Seules les adresses email @sncf.fr sont autorisées")
+                                .foregroundStyle(.blue)
+                            Text("Utilisez votre email professionnel")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -282,10 +251,10 @@ struct RegisterSheet: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.caption2)
-                                    .foregroundStyle(SNCFColors.corail)
+                                    .foregroundStyle(.red)
                                 Text(error)
                                     .font(.caption2)
-                                    .foregroundStyle(SNCFColors.corail)
+                                    .foregroundStyle(.red)
                             }
                             .padding(.top, 1)
                         }
@@ -303,7 +272,7 @@ struct RegisterSheet: View {
                 if let error = errorMessage {
                     Section {
                         Text(error)
-                            .foregroundStyle(SNCFColors.corail)
+                            .foregroundStyle(.red)
                     }
                 }
                 
@@ -339,10 +308,10 @@ struct RegisterSheet: View {
     
     private func handleRegister() async {
         // Valider l'email avant d'envoyer
-        let validation = inputEmail.isValidSNCFEmail()
-        guard validation.isValid else {
-            emailError = validation.errorMessage
-            errorMessage = validation.errorMessage
+        let isValid = inputEmail.contains("@") && inputEmail.split(separator: "@").last?.contains(".") == true
+        guard isValid else {
+            emailError = "Format d'email invalide"
+            errorMessage = "Format d'email invalide"
             return
         }
         
@@ -362,12 +331,8 @@ struct RegisterSheet: View {
         } catch {
             // Gérer les erreurs serveur (validation email)
             let errorDescription = error.localizedDescription
-            if errorDescription.contains("sncf.fr") || errorDescription.contains("autorisées") {
-                emailError = errorDescription
-                errorMessage = errorDescription
-            } else {
-                errorMessage = errorDescription
-            }
+            emailError = errorDescription
+            errorMessage = errorDescription
         }
         
         isLoading = false
@@ -412,7 +377,7 @@ struct ForgotPasswordSheet: View {
                 if let success = successMessage {
                     Section {
                         Text(success)
-                            .foregroundStyle(SNCFColors.menthe)
+                            .foregroundStyle(.green)
                     }
                 }
                 
@@ -588,7 +553,7 @@ struct SetPasswordSheet: View {
                         Text("Le mot de passe doit contenir au moins 8 caractères")
                         if !inputPassword.isEmpty && inputPassword != inputConfirmPassword {
                             Text("Les mots de passe ne correspondent pas")
-                                .foregroundStyle(SNCFColors.corail)
+                                .foregroundStyle(.red)
                         }
                     }
                 }

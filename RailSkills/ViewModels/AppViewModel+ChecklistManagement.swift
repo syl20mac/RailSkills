@@ -35,14 +35,9 @@ extension AppViewModel {
         switch ValidationService.validateChecklist(importedChecklist) {
         case .success:
             // Importer dans la bonne checklist selon le type
-            switch type {
-            case .triennale:
-                store.checklist = importedChecklist
-            case .vp:
-                store.checklistVP = importedChecklist
-            case .te:
-                store.checklistTE = importedChecklist
-            }
+            // Importer dans la checklist active quel que soit le type
+            // La gestion des types multiples a été simplifiée
+             store.checklist = importedChecklist
             initializeDriverStates(for: importedChecklist.title)
             Logger.success("Checklist \(type.displayTitle) validée et importée: \(importedChecklist.title) avec \(importedChecklist.items.count) éléments", category: "ChecklistManagement")
         case .failure(let error):
@@ -74,14 +69,8 @@ extension AppViewModel {
         
         let newChecklist = Checklist(title: title, items: [])
         
-        switch type {
-        case .triennale:
-            store.checklist = newChecklist
-        case .vp:
-            store.checklistVP = newChecklist
-        case .te:
-            store.checklistTE = newChecklist
-        }
+        // Assigner à la checklist active quel que soit le type
+        store.checklist = newChecklist
     }
     
     /// Exporte la checklist actuelle au format JSON

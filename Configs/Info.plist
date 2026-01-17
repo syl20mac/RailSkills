@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>RailSkills</string>
 	<key>CFBundleIdentifier</key>
-	<string>ctt.RailSkills</string>
+	<string>com.railskills.syl20.org.RailSkills</string>
 	<key>CFBundleName</key>
 	<string>RailSkills</string>
 	<key>CFBundlePackageType</key>

@@ -104,19 +104,11 @@ class SNCFIDSessionManagerImpl: NSObject, SNCFIDSessionManager {
     
     func authenticate(completion: @escaping (Result<SNCFIDSession, SNCFIDError>) -> Void) {
         // Obtenir le rootViewController de manière compatible iOS 15+
-        let rootViewController: UIViewController? = {
-            if #available(iOS 15.0, *) {
-                // Méthode moderne pour iOS 15+
-                return UIApplication.shared.connectedScenes
-                    .compactMap { $0 as? UIWindowScene }
-                    .flatMap { $0.windows }
-                    .first { $0.isKeyWindow }?
-                    .rootViewController
-            } else {
-                // Méthode legacy pour iOS < 15
-                return UIApplication.shared.windows.first?.rootViewController
-            }
-        }()
+        let rootViewController = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap { $0.windows }
+            .first { $0.isKeyWindow }?
+            .rootViewController
         
         guard rootViewController != nil else {
             completion(.failure(.authenticationFailed("Impossible de trouver le view controller racine")))

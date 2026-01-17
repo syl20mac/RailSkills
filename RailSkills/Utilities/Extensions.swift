@@ -35,11 +35,16 @@ extension Color {
 // MARK: - Extension View pour la compatibilité iOS
 
 extension View {
-    /// Extension pour onChange (iOS 18+)
+    /// Extension pour la compatibilité onChange entre iOS 16 et iOS 17+
     @ViewBuilder
     func onChangeCompat<T: Equatable>(of value: T, action: @escaping () -> Void) -> some View {
-        // iOS 18+ : onChange simplifié directement
-        self.onChange(of: value, action)
+        if #available(iOS 17.0, *) {
+            self.onChange(of: value, action)
+        } else {
+            self.onChange(of: value) { _ in
+                action()
+            }
+        }
     }
     
     /// Masque le clavier de manière sécurisée en évitant les conflits de contraintes

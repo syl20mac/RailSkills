@@ -12,7 +12,7 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var authService = WebAuthService.shared
-    @StateObject private var identityService = SNCFIdentityService.shared
+    @StateObject private var identityService = OrganizationIdentityService.shared
     @EnvironmentObject private var toastManager: ToastNotificationManager
     
     // MARK: - États du flux
@@ -49,7 +49,7 @@ struct OnboardingView: View {
             ZStack {
                 // Fond avec gradient SNCF
                 LinearGradient(
-                    colors: [SNCFColors.ceruleen.opacity(0.05), SNCFColors.lavande.opacity(0.05)],
+                    colors: [Color.blue.opacity(0.05), Color.purple.opacity(0.05)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -116,7 +116,7 @@ struct OnboardingView: View {
         HStack(spacing: 8) {
             ForEach(0..<4) { step in
                 Capsule()
-                    .fill(step <= currentStep ? SNCFColors.ceruleen : Color.secondary.opacity(0.3))
+                    .fill(step <= currentStep ? Color.blue : Color.secondary.opacity(0.3))
                     .frame(height: 4)
                     .animation(.spring(response: 0.3), value: currentStep)
             }
@@ -126,19 +126,24 @@ struct OnboardingView: View {
     
     // MARK: - Validation Email
     
-    /// Vérifie si l'email est un email @sncf.fr valide
+    /// Vérifie si l'email est valide
     private var isSNCFEmail: Bool {
-        email.isSNCFEmailValid
+        email.contains("@") && email.contains(".") // Simple check, could be improved
     }
     
     /// Valide l'email et met à jour le message d'erreur
     private func validateEmail() -> Bool {
-        let validation = email.isValidSNCFEmail()
-        emailError = validation.errorMessage
-        return validation.isValid
+        // Validation générique simple
+        let isValid = email.contains("@") && email.split(separator: "@").last?.contains(".") == true
+        if !isValid && !email.isEmpty {
+            emailError = "Format d'email invalide"
+        } else {
+            emailError = nil
+        }
+        return isValid
     }
     
-    /// Extrait le nom depuis l'email (prenom.nom@sncf.fr → Prénom NOM)
+    /// Extrait le nom depuis l'email (prenom.nom@domaine.com → Prénom NOM)
     private var extractedNameFromEmail: String? {
         guard email.contains("@") else { return nil }
         
@@ -165,12 +170,12 @@ struct OnboardingView: View {
                 // Icône
                 ZStack {
                     Circle()
-                        .fill(SNCFColors.ceruleen.opacity(0.1))
+                        .fill(Color.blue.opacity(0.1))
                         .frame(width: 100, height: 100)
                     
                     Image(systemName: "person.crop.circle.badge.plus")
                         .font(.system(size: 48))
-                        .foregroundStyle(SNCFColors.ceruleen)
+                        .foregroundStyle(Color.blue)
                 }
                 .padding(.top, 40)
                 
@@ -198,20 +203,22 @@ struct OnboardingView: View {
                             
                             Spacer()
                             
-                            // Badge de validation domaine SNCF
+                            // Badge de validation domaine
+                            /*
                             if isSNCFEmail {
                                 HStack(spacing: 4) {
                                     Image(systemName: "checkmark.seal.fill")
-                                    Text("SNCF")
+                                    Text("Validé")
                                 }
                                 .font(.caption.bold())
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(SNCFColors.menthe)
+                                .background(Color.green)
                                 .cornerRadius(8)
                                 .transition(.scale.combined(with: .opacity))
                             }
+                            */
                         }
                         
                         TextField("prenom.nom@sncf.fr", text: $email)
@@ -225,8 +232,8 @@ struct OnboardingView: View {
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
                                     .strokeBorder(
-                                        emailError != nil ? SNCFColors.corail : 
-                                        (isSNCFEmail ? SNCFColors.menthe : Color.clear), 
+                                        emailError != nil ? Color.red :
+                                        (isSNCFEmail ? Color.green : Color.clear), 
                                         lineWidth: 2
                                     )
                             )
@@ -238,7 +245,7 @@ struct OnboardingView: View {
                                     emailError = nil
                                 }
                                 
-                                // Auto-remplir le nom si email SNCF détecté
+                                // Auto-remplir le nom si email détecté
                                 if !hasAutoFilledName, let extractedName = extractedNameFromEmail {
                                     withAnimation(.spring(response: 0.3)) {
                                         fullName = extractedName
@@ -251,8 +258,8 @@ struct OnboardingView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "lock.fill")
                                 .font(.caption2)
-                                .foregroundStyle(SNCFColors.ceruleen)
-                            Text("Seules les adresses email @sncf.fr sont autorisées")
+                                .foregroundStyle(Color.blue)
+                            Text("Utilisez votre email professionnel")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -263,39 +270,21 @@ struct OnboardingView: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.caption2)
-                                    .foregroundStyle(SNCFColors.corail)
+                                    .foregroundStyle(Color.red)
                                 Text(error)
                                     .font(.caption2)
-                                    .foregroundStyle(SNCFColors.corail)
+                                    .foregroundStyle(Color.red)
                             }
                             .padding(.top, 1)
                             .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                         
-                        // Bouton de suggestion @sncf.fr si email incomplet
+                        // Bouton de suggestion supprimé pour généralisation
+                        /*
                         if !email.isEmpty && !email.contains("@") {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("💡 Cliquez pour compléter :")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                
-                                Button {
-                                    withAnimation(.spring(response: 0.2)) {
-                                        email = email + "@sncf.fr"
-                                        _ = validateEmail()
-                                    }
-                                } label: {
-                                    Text(email + "@sncf.fr")
-                                        .font(.caption)
-                                        .foregroundStyle(SNCFColors.ceruleen)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(SNCFColors.ceruleen.opacity(0.1))
-                                        .cornerRadius(8)
-                                }
-                            }
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                             // ... removed suggestion prompt ...
                         }
+                        */
                     }
                     
                     // Nom complet avec auto-remplissage
@@ -314,7 +303,7 @@ struct OnboardingView: View {
                                     Text("Auto")
                                 }
                                 .font(.caption)
-                                .foregroundStyle(SNCFColors.lavande)
+                                .foregroundStyle(Color.purple)
                                 .transition(.scale.combined(with: .opacity))
                             }
                         }
@@ -326,7 +315,7 @@ struct OnboardingView: View {
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(hasAutoFilledName && !fullName.isEmpty ? SNCFColors.lavande.opacity(0.5) : Color.clear, lineWidth: 1)
+                                    .strokeBorder(hasAutoFilledName && !fullName.isEmpty ? Color.purple.opacity(0.5) : Color.clear, lineWidth: 1)
                             )
                             .onChange(of: fullName) { _, _ in
                                 // Si l'utilisateur modifie le nom, désactiver l'auto-fill
@@ -341,7 +330,6 @@ struct OnboardingView: View {
                     }
                 }
                 .padding(.horizontal)
-                .animation(.spring(response: 0.3), value: isSNCFEmail)
                 .animation(.spring(response: 0.3), value: hasAutoFilledName)
                 
                 // Message d'information sur la visibilité des données
@@ -349,7 +337,7 @@ struct OnboardingView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "info.circle.fill")
                             .font(.title3)
-                            .foregroundStyle(SNCFColors.ceruleen)
+                            .foregroundStyle(Color.blue)
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Visibilité des données")
@@ -373,7 +361,7 @@ struct OnboardingView: View {
                         } label: {
                             Image(systemName: cguAccepted ? "checkmark.square.fill" : "square")
                                 .font(.title3)
-                                .foregroundStyle(cguAccepted ? SNCFColors.ceruleen : Color.secondary)
+                                .foregroundStyle(cguAccepted ? Color.blue : Color.secondary)
                         }
                         .buttonStyle(.plain)
                         
@@ -388,7 +376,7 @@ struct OnboardingView: View {
                                 } label: {
                                     Text("Conditions Générales d'Utilisation")
                                         .font(.subheadline.bold())
-                                        .foregroundStyle(SNCFColors.ceruleen)
+                                        .foregroundStyle(Color.blue)
                                         .underline()
                                 }
                             }
@@ -421,7 +409,7 @@ struct OnboardingView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(isStep1Valid ? SNCFColors.ceruleen : Color.secondary.opacity(0.3))
+                    .background(isStep1Valid ? Color.blue : Color.secondary.opacity(0.3))
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
@@ -436,11 +424,11 @@ struct OnboardingView: View {
         let trimmedEmail = email.trimmingCharacters(in: .whitespaces)
         let trimmedName = fullName.trimmingCharacters(in: .whitespaces)
         
-        // Valider l'email @sncf.fr
-        let emailValidation = email.isValidSNCFEmail()
-        
+        // Valider l'email
+        let emailValidation = validateEmail()
+         
         return !trimmedEmail.isEmpty &&
-               emailValidation.isValid &&
+               emailValidation &&
                !trimmedName.isEmpty &&
                trimmedName.count >= 3 &&
                cguAccepted
@@ -454,12 +442,12 @@ struct OnboardingView: View {
                 // Icône
                 ZStack {
                     Circle()
-                        .fill(SNCFColors.menthe.opacity(0.1))
+                        .fill(Color.green.opacity(0.1))
                         .frame(width: 100, height: 100)
                     
                     Image(systemName: "envelope.badge.shield.half.filled")
                         .font(.system(size: 48))
-                        .foregroundStyle(SNCFColors.menthe)
+                        .foregroundStyle(Color.green)
                 }
                 .padding(.top, 40)
                 
@@ -475,7 +463,7 @@ struct OnboardingView: View {
                     
                     Text(email)
                         .font(.headline)
-                        .foregroundStyle(SNCFColors.ceruleen)
+                        .foregroundStyle(Color.blue)
                 }
                 
                 // Code de vérification
@@ -499,7 +487,7 @@ struct OnboardingView: View {
                     Task { await resendCode() }
                 }
                 .font(.subheadline)
-                .foregroundStyle(SNCFColors.ceruleen)
+                .foregroundStyle(Color.blue)
                 .disabled(isLoading)
                 
                 Spacer(minLength: 20)
@@ -535,7 +523,7 @@ struct OnboardingView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(verificationCode.count >= 4 ? SNCFColors.menthe : Color.secondary.opacity(0.3))
+                        .background(verificationCode.count >= 4 ? Color.green : Color.secondary.opacity(0.3))
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
@@ -555,12 +543,12 @@ struct OnboardingView: View {
                 // Icône
                 ZStack {
                     Circle()
-                        .fill(SNCFColors.lavande.opacity(0.1))
+                        .fill(Color.purple.opacity(0.1))
                         .frame(width: 100, height: 100)
                     
                     Image(systemName: "lock.shield.fill")
                         .font(.system(size: 48))
-                        .foregroundStyle(SNCFColors.lavande)
+                        .foregroundStyle(Color.purple)
                 }
                 .padding(.top, 40)
                 
@@ -606,10 +594,10 @@ struct OnboardingView: View {
                         if !confirmPassword.isEmpty {
                             HStack {
                                 Image(systemName: passwordsMatch ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .foregroundStyle(passwordsMatch ? SNCFColors.menthe : SNCFColors.corail)
+                                    .foregroundStyle(passwordsMatch ? Color.green : Color.red)
                                 Text(passwordsMatch ? "Les mots de passe correspondent" : "Les mots de passe ne correspondent pas")
                                     .font(.caption)
-                                    .foregroundStyle(passwordsMatch ? SNCFColors.menthe : SNCFColors.corail)
+                                    .foregroundStyle(passwordsMatch ? Color.green : Color.red)
                             }
                         }
                     }
@@ -634,7 +622,7 @@ struct OnboardingView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(isStep3Valid ? SNCFColors.ceruleen : Color.secondary.opacity(0.3))
+                    .background(isStep3Valid ? Color.blue : Color.secondary.opacity(0.3))
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
@@ -662,12 +650,12 @@ struct OnboardingView: View {
             // Animation de succès
             ZStack {
                 Circle()
-                    .fill(SNCFColors.menthe.opacity(0.1))
+                    .fill(Color.green.opacity(0.1))
                     .frame(width: 120, height: 120)
                 
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 72))
-                    .foregroundStyle(SNCFColors.menthe)
+                    .foregroundStyle(Color.green)
                     .symbolEffect(.bounce, value: showingSuccess)
             }
             
@@ -686,9 +674,9 @@ struct OnboardingView: View {
             
             // Résumé
             VStack(spacing: 12) {
-                summaryRow(icon: "envelope.fill", title: "Email", value: email, color: SNCFColors.ceruleen)
-                summaryRow(icon: "person.fill", title: "Profil CTT", value: fullName, color: SNCFColors.lavande)
-                summaryRow(icon: "cloud.fill", title: "SharePoint", value: "Prêt à synchroniser", color: SNCFColors.menthe)
+                summaryRow(icon: "envelope.fill", title: "Email", value: email, color: Color.blue)
+                summaryRow(icon: "person.fill", title: "Profil CTT", value: fullName, color: Color.purple)
+                summaryRow(icon: "cloud.fill", title: "SharePoint", value: "Prêt à synchroniser", color: Color.green)
             }
             .padding()
             .background(Color(UIColor.secondarySystemBackground))
@@ -706,7 +694,7 @@ struct OnboardingView: View {
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(SNCFColors.ceruleen)
+                    .background(Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(12)
             }
@@ -820,7 +808,7 @@ struct OnboardingView: View {
             
             // 3. Configurer automatiquement le profil CTT
             identityService.setIdentity(
-                identity: email,
+                userId: email,
                 name: fullName
             )
             

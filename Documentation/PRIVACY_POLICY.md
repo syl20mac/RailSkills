@@ -27,8 +27,8 @@ RailSkills collecte et stocke localement les données suivantes :
 
 - **Données d'évaluation par checklist :**
   - **Checklist Triennale** : États des questions (0=non validé, 1=partiel, 2=validé, 3=non traité), notes par question, dates de suivi
-  - **Checklist VP (Visite Périodique)** : États, notes et dates de suivi
-  - **Checklist TE (Test d'Évaluation)** : États, notes et dates de suivi
+  - **Checklist VP (Validation Périodique)** : États, notes et dates de suivi
+  - **Checklist TE (Train d'Essai)** : États, notes et dates de suivi
 
 - **Métadonnées :**
   - Identifiant unique (UUID) pour chaque conducteur
@@ -65,8 +65,8 @@ Les données collectées sont utilisées uniquement pour :
 
 - Permettre le suivi des évaluations réglementaires des conducteurs
   - Suivi triennal (checklist triennale)
-  - Visites périodiques (checklist VP)
-  - Tests d'évaluation (checklist TE)
+  - Validations périodiques (checklist VP)
+  - Trains d'essai (checklist TE)
 - Synchroniser les données entre différents appareils (si SharePoint activé)
 - Générer des rapports PDF avec en-têtes personnalisés
 - Exporter/importer des données au format JSON (avec compression et chiffrement optionnels)

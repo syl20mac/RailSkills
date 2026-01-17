@@ -202,3 +202,23 @@ struct TermsOfServiceView: View {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

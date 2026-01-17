@@ -15,6 +15,7 @@ import SwiftUI
 struct RailSkillsApp: App {
     @StateObject private var toastManager = ToastNotificationManager()
     @StateObject private var authService = WebAuthService.shared
+    @StateObject private var appConfig = AppConfigurationService.shared
     
     init() {
         // Utilisation des polices système iOS (SF Pro Rounded)
@@ -26,18 +27,34 @@ struct RailSkillsApp: App {
     
     var body: some Scene {
         WindowGroup {
-            // Afficher la vue de connexion si l'utilisateur n'est pas authentifié
-            if authService.isAuthenticated {
+            // 1. Choix du mode au premier lancement
+            if appConfig.appMode == .setup {
+                ModeSelectionView()
+                    .environmentObject(toastManager)
+            }
+            // 2. Mode Local : Accès direct à l'application
+            else if appConfig.isLocalMode {
                 ContentView()
                     .environmentObject(toastManager)
                     .toastNotifications(manager: toastManager)
                     .onOpenURL { url in
                         handleOpenURL(url)
                     }
-            } else {
-                LoginView()
-                    .environmentObject(toastManager)
-                    .toastNotifications(manager: toastManager)
+            }
+            // 3. Mode Entreprise : Authentification requise
+            else {
+                if authService.isAuthenticated {
+                    ContentView()
+                        .environmentObject(toastManager)
+                        .toastNotifications(manager: toastManager)
+                        .onOpenURL { url in
+                            handleOpenURL(url)
+                        }
+                } else {
+                    LoginView()
+                        .environmentObject(toastManager)
+                        .toastNotifications(manager: toastManager)
+                }
             }
         }
     }
@@ -82,8 +99,9 @@ struct RailSkillsApp: App {
         )
         #endif
         
-        // Configurer SNCFIdentityService pour utiliser l'implémentation réelle du SDK
-        SNCFIdentityService.shared.sessionManager = SNCFIDSessionManagerImpl()
+        // Configurer OrganizationIdentityService pour utiliser l'implémentation réelle du SDK
+        // Note: OrganizationIdentityService est l'ancien SNCFIdentityService renommé
+        // OrganizationIdentityService.shared.sessionManager = SNCFIDSessionManagerImpl()
         */
     }
     

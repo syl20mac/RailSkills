@@ -1,4 +1,4 @@
-# 📊 Contenu de la présentation RailSkills Manager Traction
+# 📊 Contenu de la présentation RailSkills CTT
 
 **Pour créer un PowerPoint :** Utiliser ce contenu comme base pour chaque slide
 
@@ -8,11 +8,11 @@
 
 **Titre principal :** 🚂 RailSkills
 
-**Sous-titre :** Application de suivi des compétences Manager Traction
+**Sous-titre :** Application de suivi des compétences CTT
 
 **Description :** Évaluation triennale CFL
 
-**Pied de page :** Présentation aux Manager Traction - Novembre 2025
+**Pied de page :** Présentation aux Cadres Transport Traction - Novembre 2025
 
 **Design :** Fond dégradé bleu marine → bleu SNCF
 
@@ -43,7 +43,7 @@
 **Titre :** 🎯 Qu'est-ce que RailSkills ?
 
 **Encadré principal (bleu dégradé) :**
-> **RailSkills** est une application iPad/iPhone conçue pour les **Manager Traction** et leurs **ARC**, permettant le **suivi numérique des compétences** des conducteurs circulant sur le réseau CFL.
+> **RailSkills** est une application iPad/iPhone conçue pour les **CTT** et leurs **ARC**, permettant le **suivi numérique des compétences** des conducteurs circulant sur le réseau CFL.
 
 **4 icônes/stats :**
 | 📱 | 🔒 | 📊 | 🔄 |

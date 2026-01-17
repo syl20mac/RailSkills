@@ -28,7 +28,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 // ═══════════════════════════════════════════
-                // SECTION UTILISATEUR : Profil CTT
+                // SECTION UTILISATEUR : Profil
                 // ═══════════════════════════════════════════
                 Section {
                     NavigationLink {
@@ -37,21 +37,21 @@ struct SettingsView: View {
                         HStack(spacing: 12) {
                             ZStack {
                                 Circle()
-                                    .fill(SNCFColors.ceruleen.opacity(0.1))
+                                    .fill(Color.blue.opacity(0.1))
                                     .frame(width: 44, height: 44)
                                 
                                 Image(systemName: "person.circle.fill")
                                     .font(.title2)
-                                    .foregroundStyle(SNCFColors.ceruleen)
+                                    .foregroundStyle(Color.blue)
                             }
                             
                             VStack(alignment: .leading, spacing: 4) {
-                                if SNCFIdentityService.shared.isAuthenticated {
-                                    Text(SNCFIdentityService.shared.sncfName)
+                                if OrganizationIdentityService.shared.isAuthenticated {
+                                    Text(OrganizationIdentityService.shared.displayName)
                                         .font(.headline)
                                         .foregroundStyle(.primary)
                                     
-                                    Text(SNCFIdentityService.shared.sncfIdentity)
+                                    Text(OrganizationIdentityService.shared.userId)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 } else {
@@ -61,13 +61,13 @@ struct SettingsView: View {
                                     
                                     Text("Identifiez-vous pour activer la synchronisation")
                                         .font(.caption)
-                                        .foregroundStyle(SNCFColors.safran)
+                                        .foregroundStyle(Color.orange)
                                 }
                             }
                         }
                     }
                 } header: {
-                    Text("Profil CTT")
+                    Text("Profil")
                 }
                 
                 // ═══════════════════════════════════════════
@@ -103,7 +103,7 @@ struct SettingsView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: mode.icon)
                                     .font(.title3)
-                                    .foregroundStyle(interactionMode == mode.rawValue ? SNCFColors.ceruleen : .secondary)
+                                    .foregroundStyle(interactionMode == mode.rawValue ? Color.blue : .secondary)
                                     .frame(width: 28)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
@@ -121,7 +121,7 @@ struct SettingsView: View {
                                 
                                 if interactionMode == mode.rawValue {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(SNCFColors.ceruleen)
+                                        .foregroundStyle(Color.blue)
                                 }
                             }
                         }
@@ -136,136 +136,11 @@ struct SettingsView: View {
                 // ═══════════════════════════════════════════
                 if let cl = vm.store.checklist {
                     Section {
-                        statRow(icon: "doc.text.fill", label: "Questions avec notes", value: "\(vm.notesCount())", color: SNCFColors.lavande)
-                        statRow(icon: "list.bullet.clipboard.fill", label: "Total des questions", value: "\(cl.questions.count)", color: SNCFColors.ceruleen)
-                        statRow(icon: "person.2.fill", label: "Conducteurs suivis", value: "\(vm.store.drivers.count)", color: SNCFColors.menthe)
+                        statRow(icon: "doc.text.fill", label: "Questions avec notes", value: "\(vm.notesCount())", color: Color.purple)
+                        statRow(icon: "list.bullet.clipboard.fill", label: "Total des questions", value: "\(cl.questions.count)", color: Color.blue)
+                        statRow(icon: "person.2.fill", label: "Conducteurs suivis", value: "\(vm.store.drivers.count)", color: Color.green)
                     } header: {
                         Text("Statistiques")
-                    }
-                }
-                
-                // ═══════════════════════════════════════════
-                // SECTION UTILISATEUR : Checklists
-                // ═══════════════════════════════════════════
-                Section {
-                    // État des checklists
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Checklist Triennale")
-                                .font(.subheadline.weight(.medium))
-                            Text(vm.store.checklist != nil ? "Chargée" : "Non chargée")
-                                .font(.caption)
-                                .foregroundStyle(vm.store.checklist != nil ? SNCFColors.menthe : .secondary)
-                        }
-                        Spacer()
-                        if vm.store.checklist != nil {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(SNCFColors.menthe)
-                        }
-                    }
-                    
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Checklist VP")
-                                .font(.subheadline.weight(.medium))
-                            Text(vm.store.checklistVP != nil ? "Chargée" : "Non chargée")
-                                .font(.caption)
-                                .foregroundStyle(vm.store.checklistVP != nil ? SNCFColors.menthe : .secondary)
-                        }
-                        Spacer()
-                        if vm.store.checklistVP != nil {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(SNCFColors.menthe)
-                        }
-                    }
-                    
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Checklist TE")
-                                .font(.subheadline.weight(.medium))
-                            Text(vm.store.checklistTE != nil ? "Chargée" : "Non chargée")
-                                .font(.caption)
-                                .foregroundStyle(vm.store.checklistTE != nil ? SNCFColors.menthe : .secondary)
-                        }
-                        Spacer()
-                        if vm.store.checklistTE != nil {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(SNCFColors.menthe)
-                        }
-                    }
-                    
-                    // Bouton pour uploader les checklists par défaut (uniquement si SharePoint est configuré)
-                    if SharePointSyncService.shared.isConfigured {
-                        Button {
-                            uploadDefaultChecklists()
-                        } label: {
-                            HStack {
-                                if isUploadingChecklists {
-                                    ProgressView()
-                                        .progressViewStyle(.circular)
-                                        .scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "arrow.up.circle.fill")
-                                        .foregroundStyle(SNCFColors.ceruleen)
-                                }
-                                Text(isUploadingChecklists ? "Upload en cours..." : "Uploader les checklists VP et TE vers SharePoint")
-                                    .font(.subheadline.weight(.medium))
-                            }
-                        }
-                        .disabled(SharePointSyncService.shared.isSyncing || isUploadingChecklists)
-                    } else {
-                        HStack {
-                            Image(systemName: "info.circle")
-                                .foregroundStyle(.secondary)
-                            Text("Configurez SharePoint pour uploader les checklists")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                } header: {
-                    Text("Checklists")
-                } footer: {
-                    if SharePointSyncService.shared.isConfigured {
-                        Text("Les checklists VP et TE seront uploadées vers SharePoint pour être disponibles pour tous les CTT.")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text("Activez le mode avancé et configurez SharePoint pour uploader les checklists.")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                
-                // ═══════════════════════════════════════════
-                // SECTION UTILISATEUR : Mode démonstration
-                // ═══════════════════════════════════════════
-                if UserDefaults.standard.bool(forKey: "demo_mode_enabled") {
-                    Section {
-                        HStack(spacing: 12) {
-                            Image(systemName: "play.circle.fill")
-                                .foregroundStyle(SNCFColors.menthe)
-                                .frame(width: 24)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Mode démonstration actif")
-                                    .font(.subheadline.weight(.medium))
-                                Text("Vous utilisez des données de démonstration")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        
-                        Button(role: .destructive) {
-                            disableDemoMode()
-                        } label: {
-                            HStack {
-                                Image(systemName: "stop.circle.fill")
-                                Text("Désactiver le mode démonstration")
-                            }
-                        }
-                    } header: {
-                        Text("Mode démonstration")
-                    } footer: {
-                        Text("Le mode démonstration utilise des données fictives pour les reviewers Apple. Désactivez-le pour utiliser vos vraies données.")
-                            .foregroundStyle(.secondary)
                     }
                 }
                 
@@ -277,14 +152,14 @@ struct SettingsView: View {
                         if let user = WebAuthService.shared.currentUser {
                             HStack(spacing: 12) {
                                 Image(systemName: "checkmark.seal.fill")
-                                    .foregroundStyle(SNCFColors.menthe)
+                                    .foregroundStyle(Color.green)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(user.email)
                                         .font(.subheadline.weight(.medium))
                                     Text("Compte vérifié")
                                         .font(.caption)
-                                        .foregroundStyle(SNCFColors.menthe)
+                                        .foregroundStyle(Color.green)
                                 }
                             }
                         }
@@ -306,7 +181,7 @@ struct SettingsView: View {
                         } label: {
                             HStack(spacing: 12) {
                                 Image(systemName: "person.badge.plus")
-                                    .foregroundStyle(SNCFColors.ceruleen)
+                                    .foregroundStyle(Color.blue)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Se connecter")
@@ -336,33 +211,6 @@ struct SettingsView: View {
                 }
                 
                 // ═══════════════════════════════════════════
-                // SECTION UTILISATEUR : Partage & Export
-                // ═══════════════════════════════════════════
-                Section {
-                    NavigationLink {
-                        SharingView(vm: vm)
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "square.and.arrow.up")
-                                .foregroundStyle(SNCFColors.ceruleen)
-                                .frame(width: 24)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Partage & Export")
-                                    .font(.subheadline.weight(.medium))
-                                Text("Exporter et importer des données")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Partage")
-                } footer: {
-                    Text("Exportez vos conducteurs en JSON ou CSV, importez depuis un fichier")
-                }
-                
-                // ═══════════════════════════════════════════
                 // SECTION PERSONNALISATION
                 // ═══════════════════════════════════════════
                 Section {
@@ -371,7 +219,7 @@ struct SettingsView: View {
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "note.text")
-                                .foregroundStyle(SNCFColors.ceruleen)
+                                .foregroundStyle(Color.blue)
                                 .frame(width: 24)
                             
                             VStack(alignment: .leading, spacing: 2) {
@@ -402,7 +250,7 @@ struct SettingsView: View {
                                 icon: "cloud.fill",
                                 title: "Configuration SharePoint",
                                 subtitle: AzureADService.shared.isConfigured ? "Configuré ✓" : "Non configuré",
-                                color: SNCFColors.ceruleen
+                                color: Color.blue
                             )
                         }
                         
@@ -415,7 +263,7 @@ struct SettingsView: View {
                                     icon: "arrow.triangle.2.circlepath",
                                     title: "Synchronisation manuelle",
                                     subtitle: "Forcer la synchronisation",
-                                    color: SNCFColors.menthe
+                                    color: Color.green
                                 )
                             }
                         }
@@ -428,7 +276,7 @@ struct SettingsView: View {
                                 icon: "lock.shield.fill",
                                 title: "Secret organisationnel",
                                 subtitle: "Chiffrement des exports",
-                                color: SNCFColors.lavande
+                                color: Color.purple
                             )
                         }
                         
@@ -440,7 +288,7 @@ struct SettingsView: View {
                                 icon: "link",
                                 title: "Configuration API",
                                 subtitle: "URL du serveur backend",
-                                color: SNCFColors.safran
+                                color: Color.orange
                             )
                         }
                         
@@ -453,9 +301,9 @@ struct SettingsView: View {
                         } label: {
                             HStack {
                                 Image(systemName: "eye.slash")
-                                    .foregroundStyle(SNCFColors.corail)
+                                    .foregroundStyle(Color.red)
                                 Text("Masquer les options avancées")
-                                    .foregroundStyle(SNCFColors.corail)
+                                    .foregroundStyle(Color.red)
                             }
                         }
                     } header: {
@@ -465,7 +313,7 @@ struct SettingsView: View {
                         }
                     } footer: {
                         Text("⚠️ Ces options sont réservées aux administrateurs IT. Modifiez-les avec précaution.")
-                            .foregroundStyle(SNCFColors.safran)
+                            .foregroundStyle(Color.orange)
                     }
                 }
                 
@@ -478,7 +326,7 @@ struct SettingsView: View {
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "doc.text.fill")
-                                .foregroundStyle(SNCFColors.ceruleen)
+                                .foregroundStyle(Color.blue)
                                 .frame(width: 24)
                             
                             Text("Conditions Générales d'Utilisation")
@@ -518,7 +366,7 @@ struct SettingsView: View {
                                     Text("Mode avancé activé")
                                 }
                                 .font(.caption2)
-                                .foregroundStyle(SNCFColors.menthe)
+                                .foregroundStyle(Color.green)
                             }
                         }
                         .onTapGesture {
@@ -550,37 +398,9 @@ struct SettingsView: View {
                     performFullReset()
                 }
             } message: {
-                Text("Cette action supprimera :\n• Votre profil CTT\n• Tous les conducteurs\n• Toutes les notes\n• Tous les réglages\n\nCette action est irréversible.")
-            }
-            .alert(uploadAlertTitle, isPresented: $showingUploadAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(uploadAlertMessage)
+                Text("Cette action supprimera :\n• Votre profil\n• Tous les conducteurs\n• Toutes les notes\n• Tous les réglages\n\nCette action est irréversible.")
             }
         }
-    }
-    
-    // MARK: - Désactivation du mode démo
-    
-    /// Désactive le mode démonstration
-    private func disableDemoMode() {
-        // Désactiver le mode démo
-        UserDefaults.standard.set(false, forKey: "demo_mode_enabled")
-        
-        // Déconnecter le profil de démo
-        Task {
-            await WebAuthService.shared.logout()
-        }
-        
-        // Réinitialiser les données de démo
-        vm.store.resetAllData()
-        
-        // Feedback
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-        
-        toastManager.show("Mode démonstration désactivé", type: .success)
-        Logger.info("Mode démonstration désactivé", category: "SettingsView")
     }
     
     // MARK: - Réinitialisation complète
@@ -589,32 +409,29 @@ struct SettingsView: View {
     private func performFullReset() {
         isResetting = true
         
-        // 1. Désactiver le mode démo si actif
-        UserDefaults.standard.set(false, forKey: "demo_mode_enabled")
-        
-        // 2. Déconnexion du service web
+        // 1. Déconnexion du service web
         Task {
             await WebAuthService.shared.logout()
         }
         
-        // 3. Effacer le profil CTT
-        SNCFIdentityService.shared.clearIdentity()
+        // 2. Effacer le profil
+        OrganizationIdentityService.shared.clearIdentity()
         
-        // 4. Effacer les tokens de la Keychain
+        // 3. Effacer les tokens de la Keychain
         try? SecretManager.shared.deleteClientSecret()
         
-        // 5. Effacer le cache du secret organisationnel
+        // 4. Effacer le cache du secret organisationnel
         OrganizationSecretService.shared.clearCache()
         
-        // 6. Effacer toutes les données UserDefaults
+        // 5. Effacer toutes les données UserDefaults
         let domain = Bundle.main.bundleIdentifier!
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
         
-        // 7. Réinitialiser le Store (conducteurs, checklist)
+        // 6. Réinitialiser le Store (conducteurs, checklist)
         vm.store.resetAllData()
         
-        // 8. Feedback et notification
+        // 7. Feedback et notification
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
         
@@ -697,37 +514,6 @@ struct SettingsView: View {
         case 2: return "Validé"
         case 1: return "Partiel"
         default: return "Non validé"
-        }
-    }
-    
-    // MARK: - Upload des checklists par défaut
-    
-    @State private var isUploadingChecklists = false
-    @State private var uploadAlertTitle = ""
-    @State private var uploadAlertMessage = ""
-    @State private var showingUploadAlert = false
-    
-    private func uploadDefaultChecklists() {
-        isUploadingChecklists = true
-        Task {
-            do {
-                try await SharePointSyncService.shared.uploadDefaultChecklistsToSharePoint()
-                await MainActor.run {
-                    isUploadingChecklists = false
-                    uploadAlertTitle = "Upload réussi"
-                    uploadAlertMessage = "Les checklists VP et TE ont été uploadées vers SharePoint avec succès."
-                    showingUploadAlert = true
-                    toastManager.show("Checklists uploadées avec succès", type: .success)
-                }
-            } catch {
-                await MainActor.run {
-                    isUploadingChecklists = false
-                    uploadAlertTitle = "Erreur d'upload"
-                    uploadAlertMessage = error.localizedDescription
-                    showingUploadAlert = true
-                    toastManager.show("Erreur lors de l'upload", type: .error)
-                }
-            }
         }
     }
 }

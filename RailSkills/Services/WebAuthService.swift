@@ -41,50 +41,27 @@ class WebAuthService: ObservableObject {
     
     /// Indique si l'utilisateur est connecté
     var isAuthenticated: Bool {
-        // Vérifier le mode démo de manière synchrone (UserDefaults est thread-safe)
-        let isDemoModeEnabled = UserDefaults.standard.bool(forKey: "demo_mode_enabled")
-        
-        // En mode démo, considérer comme authentifié
-        if isDemoModeEnabled {
-            return true
-        }
-        return authToken != nil && currentUser != nil
+        authToken != nil && currentUser != nil
     }
     
     /// Rôle de l'utilisateur connecté (par défaut 'user')
     var userRole: UserRole {
-        let isDemoModeEnabled = UserDefaults.standard.bool(forKey: "demo_mode_enabled")
-        if isDemoModeEnabled {
-            return .admin
-        }
-        return currentUser?.effectiveRole ?? .user
+        currentUser?.effectiveRole ?? .user
     }
     
     /// Indique si l'utilisateur peut voir tous les CTT (superviseur ou admin)
     var canViewAllCTT: Bool {
-        let isDemoModeEnabled = UserDefaults.standard.bool(forKey: "demo_mode_enabled")
-        if isDemoModeEnabled {
-            return true
-        }
-        return currentUser?.canViewAllCTT ?? false
+        currentUser?.canViewAllCTT ?? false
     }
     
     /// Indique si l'utilisateur est administrateur
     var isAdmin: Bool {
-        let isDemoModeEnabled = UserDefaults.standard.bool(forKey: "demo_mode_enabled")
-        if isDemoModeEnabled {
-            return true
-        }
-        return currentUser?.isAdmin ?? false
+        currentUser?.isAdmin ?? false
     }
     
     /// Indique si l'utilisateur est superviseur
     var isSupervisor: Bool {
-        let isDemoModeEnabled = UserDefaults.standard.bool(forKey: "demo_mode_enabled")
-        if isDemoModeEnabled {
-            return true
-        }
-        return currentUser?.isSupervisor ?? false
+        currentUser?.isSupervisor ?? false
     }
     
     /// État de chargement
@@ -101,24 +78,6 @@ class WebAuthService: ObservableObject {
     private init() {
         // Charger le token depuis Keychain au démarrage
         loadTokenFromKeychain()
-        
-        // Vérifier le mode démo de manière synchrone (UserDefaults est thread-safe)
-        let isDemoModeEnabled = UserDefaults.standard.bool(forKey: "demo_mode_enabled")
-        
-        // Si le mode démo est activé, configurer le profil de démo
-        if isDemoModeEnabled {
-            currentUser = UserProfile(
-                id: UUID().uuidString,
-                email: "demo.reviewer@sncf.fr",
-                cttId: "demo.reviewer@sncf.fr",
-                role: .admin,
-                hasGlobalView: true,
-                createdAt: ISO8601DateFormatter().string(from: Date()),
-                lastLogin: ISO8601DateFormatter().string(from: Date())
-            )
-            authToken = "demo_token_\(UUID().uuidString)" // Token factice pour le mode démo
-            Logger.info("Mode démo activé - profil de démonstration configuré", category: "WebAuth")
-        }
     }
     
     // MARK: - Authentification
@@ -526,13 +485,6 @@ class WebAuthService: ObservableObject {
     
     /// Déconnecte l'utilisateur
     func logout() async {
-        // Ne pas déconnecter en mode démo
-        let isDemoModeEnabled = UserDefaults.standard.bool(forKey: "demo_mode_enabled")
-        if isDemoModeEnabled {
-            Logger.info("Mode démo actif - déconnexion ignorée", category: "WebAuth")
-            return
-        }
-        
         // Supprimer le token et le profil
         await deleteTokenFromKeychain()
         userDefaults.removeObject(forKey: userProfileKey)
@@ -541,26 +493,6 @@ class WebAuthService: ObservableObject {
         self.currentUser = nil
         
         Logger.info("Déconnexion réussie", category: "WebAuth")
-    }
-    
-    /// Active le mode démonstration (pour les reviewers Apple)
-    func enableDemoMode() async {
-        // Activer le mode démo dans UserDefaults
-        UserDefaults.standard.set(true, forKey: "demo_mode_enabled")
-        
-        // Configurer le profil de démo
-        self.currentUser = UserProfile(
-            id: UUID().uuidString,
-            email: "demo.reviewer@sncf.fr",
-            cttId: "demo.reviewer@sncf.fr",
-            role: .admin,
-            hasGlobalView: true,
-            createdAt: ISO8601DateFormatter().string(from: Date()),
-            lastLogin: ISO8601DateFormatter().string(from: Date())
-        )
-        self.authToken = "demo_token_\(UUID().uuidString)"
-        
-        Logger.success("Mode démonstration activé", category: "WebAuth")
     }
     
     /// Vérifie si le token JWT est valide (non expiré)

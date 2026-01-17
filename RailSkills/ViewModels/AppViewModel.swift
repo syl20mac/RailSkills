@@ -26,9 +26,9 @@ final class AppViewModel: ObservableObject {
     // Système de cache pour optimiser les calculs répétitifs et améliorer les performances
     // Ces propriétés sont internal pour permettre l'accès depuis les extensions
     var cachedProgress: Double?
-    var cachedStateMap: [UUID: Int]?
+    var cachedStateMap: [String: Int]?
     var cachedChecklistTitle: String?
-    var cachedNotesMap: [UUID: String]?
+    var cachedNotesMap: [String: String]?
 
     init() {
         // Observe les changements du store pour invalider le cache
@@ -59,7 +59,7 @@ final class AppViewModel: ObservableObject {
     func checklist(for type: ChecklistType) -> Checklist? {
         switch type {
         case .triennale:
-            return store.checklist
+            return store.checklistTriennale
         case .vp:
             return store.checklistVP
         case .te:

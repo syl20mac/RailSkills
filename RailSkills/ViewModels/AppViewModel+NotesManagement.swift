@@ -12,7 +12,7 @@ import Combine
 extension AppViewModel {
     
     /// Map de notes cachée pour les questions avec système de cache amélioré
-    private func notesMap(for type: ChecklistType = .triennale) -> [UUID: String] {
+    private func notesMap(for type: ChecklistType = .triennale) -> [String: String] {
         guard let cl = checklist(for: type) else { return [:] }
         guard store.drivers.indices.contains(selectedDriverIndex) else { return [:] }
         
@@ -31,7 +31,7 @@ extension AppViewModel {
     /// - Optimisé avec cache pour réduire les accès répétés
     func note(for item: ChecklistItem, type: ChecklistType = .triennale) -> String? {
         guard !item.isCategory else { return nil }
-        return notesMap(for: type)[item.id]
+        return notesMap(for: type)[item.id.uuidString]
     }
     
     /// Définit la note pour un élément et met à jour la date du dernier suivi
@@ -47,9 +47,9 @@ extension AppViewModel {
         // Traiter la note
         let trimmedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
         if let trimmedNote = trimmedNote, !trimmedNote.isEmpty {
-            notes[item.id] = trimmedNote
+            notes[item.id.uuidString] = trimmedNote
         } else {
-            notes.removeValue(forKey: item.id)
+            notes.removeValue(forKey: item.id.uuidString)
         }
         
         driver.checklistNotes[key] = notes
@@ -75,7 +75,7 @@ extension AppViewModel {
     /// Vérifie si un élément a une note
     func hasNote(for item: ChecklistItem, type: ChecklistType = .triennale) -> Bool {
         guard !item.isCategory else { return false }
-        return notesMap(for: type)[item.id] != nil
+        return notesMap(for: type)[item.id.uuidString] != nil
     }
     
     /// Compte le nombre de questions avec notes dans la checklist actuelle

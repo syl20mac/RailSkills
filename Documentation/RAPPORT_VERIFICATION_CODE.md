@@ -218,3 +218,23 @@ private static let defaultSecret = "RailSkills.Default.2024"
 **Analysé par :** Cursor IA  
 **Statut final :** ✅ **CODE VALIDÉ - PRÊT POUR PRODUCTION**
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

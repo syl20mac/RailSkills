@@ -9,15 +9,15 @@ import Foundation
 
 /// Service de recherche optimisé pour les questions et notes
 enum SearchService {
-    /// Index inversé : mot-clé -> Set d'IDs de questions
-    private static var notesSearchIndex: [String: Set<UUID>] = [:]
+    /// Index inversé : mot-clé -> Set d'IDs de questions (as String)
+    private static var notesSearchIndex: [String: Set<String>] = [:]
     
     /// Met à jour l'index de recherche des notes
     /// - Parameters:
     ///   - drivers: Liste des conducteurs
     ///   - checklistTitle: Titre de la checklist
     static func updateNotesSearchIndex(drivers: [DriverRecord], checklistTitle: String) {
-        var index: [String: Set<UUID>] = [:]
+        var index: [String: Set<String>] = [:]
         
         for driver in drivers {
             let notesMap = driver.checklistNotes[checklistTitle] ?? [:]
@@ -63,7 +63,7 @@ enum SearchService {
             .filter { $0.count >= 3 }
         
         for word in searchWords {
-            if let matchingIds = notesSearchIndex[word], matchingIds.contains(item.id) {
+            if let matchingIds = notesSearchIndex[word], matchingIds.contains(item.id.uuidString) {
                 return true
             }
         }
@@ -86,7 +86,7 @@ enum SearchService {
         
         for driver in drivers {
             let notesMap = driver.checklistNotes[checklistTitle] ?? [:]
-            if let note = notesMap[item.id], !note.isEmpty {
+            if let note = notesMap[item.id.uuidString], !note.isEmpty {
                 if note.lowercased().contains(searchLower) {
                     return true
                 }
