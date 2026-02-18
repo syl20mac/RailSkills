@@ -6,13 +6,38 @@
 	objectVersion = 90;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4E5D17032F3C7E3C00D9F47C /* fix-build-errors.sh in Resources */ = {isa = PBXBuildFile; fileRef = 4E5D17022F3C7E3C00D9F47C /* fix-build-errors.sh */; };
+		4E5D17052F3C7E5C00D9F47C /* FIX_BUILD_ERRORS_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 4E5D17042F3C7E5C00D9F47C /* FIX_BUILD_ERRORS_GUIDE.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		4E5D17022F3C7E3C00D9F47C /* fix-build-errors.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "fix-build-errors.sh"; sourceTree = "<group>"; };
+		4E5D17042F3C7E5C00D9F47C /* FIX_BUILD_ERRORS_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FIX_BUILD_ERRORS_GUIDE.md; sourceTree = "<group>"; };
 		4E8C12A72EE03FD50037613D /* RailSkills.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RailSkills.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4EC811EF2F45BBF80041DA92 /* RailSkills.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = RailSkills.xcodeproj; sourceTree = "<group>"; };
+		4EC816B22F45BC450041DA92 /* RailSkills.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = RailSkills.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4E5D22EF2F3C811D00D9F47C /* Exceptions for "RailSkills" folder in "RailSkills" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Configs/Base.xcconfig,
+				Configs/Debug.xcconfig,
+				Configs/Production.xcconfig,
+				Configs/Release.xcconfig,
+			);
+			target = 4E8C12A62EE03FD50037613D /* RailSkills */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4E8C12A92EE03FD50037613D /* RailSkills */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4E5D22EF2F3C811D00D9F47C /* Exceptions for "RailSkills" folder in "RailSkills" target */,
+			);
 			path = RailSkills;
 			sourceTree = "<group>";
 		};
@@ -32,6 +57,8 @@
 			children = (
 				4E8C12A92EE03FD50037613D /* RailSkills */,
 				4E8C12A82EE03FD50037613D /* Products */,
+				4E5D17022F3C7E3C00D9F47C /* fix-build-errors.sh */,
+				4E5D17042F3C7E5C00D9F47C /* FIX_BUILD_ERRORS_GUIDE.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -39,6 +66,20 @@
 			isa = PBXGroup;
 			children = (
 				4E8C12A72EE03FD50037613D /* RailSkills.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4EC812962F45BBF80041DA92 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4EC816B62F45BC450041DA92 /* Products */ = {
+			isa = PBXGroup;
+			children = (
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -72,7 +113,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2610;
+				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					4E8C12A62EE03FD50037613D = {
 						CreatedOnToolsVersion = 26.1.1;
@@ -91,6 +132,16 @@
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 4E8C12A82EE03FD50037613D /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 4EC812962F45BBF80041DA92 /* Products */;
+					ProjectRef = 4EC811EF2F45BBF80041DA92 /* RailSkills.xcodeproj */;
+				},
+				{
+					ProductGroup = 4EC816B62F45BC450041DA92 /* Products */;
+					ProjectRef = 4EC816B22F45BC450041DA92 /* RailSkills.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				4E8C12A62EE03FD50037613D /* RailSkills */,
@@ -102,6 +153,8 @@
 		4E8C12A52EE03FD50037613D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
+				4E5D17052F3C7E5C00D9F47C /* FIX_BUILD_ERRORS_GUIDE.md in Resources */,
+				4E5D17032F3C7E3C00D9F47C /* fix-build-errors.sh in Resources */,
 			);
 		};
 /* End PBXResourcesBuildPhase section */
@@ -174,6 +227,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -231,6 +285,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -245,6 +300,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UD44R8K7U8;
 				ENABLE_PREVIEWS = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = ".claude/**";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Configs/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -273,6 +329,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UD44R8K7U8;
 				ENABLE_PREVIEWS = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = ".claude/**";
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Configs/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
