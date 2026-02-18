@@ -15,18 +15,17 @@ struct DashboardView: View {
     @State private var showingDriverDetail: DriverRecord?
     @State private var animateCards = false
     @State private var sortOption: SortOption = .timeRemaining
+    @Environment(\.horizontalSizeClass) private var hSizeClass
+    @State private var lastSyncDate: Date?
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-
-
-
-
+                // Indicateur de synchronisation
+                syncIndicator
+                
                 // Section 3: Graphique de répartition globale
                 teamDistributionChart
-
-
                 
                 // Section 5: Progression par conducteur
                 driversProgressSection
@@ -41,6 +40,13 @@ struct DashboardView: View {
             withAnimation(.easeOut(duration: 0.5)) {
                 animateCards = true
             }
+            updateLastSyncDate()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ChecklistDownloaded"))) { _ in
+            updateLastSyncDate()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DriversDownloaded"))) { _ in
+            updateLastSyncDate()
         }
         .sheet(item: $showingDriverDetail) { driver in
             NavigationStack {
@@ -49,9 +55,87 @@ struct DashboardView: View {
         }
     }
 
-
-
-
+    // MARK: - Sync Indicator
+    
+    private var syncIndicator: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: vm.store.isSyncing ? "arrow.triangle.2.circlepath" : "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(vm.store.isSyncing ? .blue : .green)
+                    .rotationEffect(.degrees(vm.store.isSyncing ? 360 : 0))
+                    .animation(vm.store.isSyncing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: vm.store.isSyncing)
+                
+                if vm.store.isSyncing {
+                    Text(vm.store.syncStatusMessage.isEmpty ? "Synchronisation en cours..." : vm.store.syncStatusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if let lastSync = lastSyncDate {
+                    Text("Dernière synchro : \(timeAgo(from: lastSync))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("En attente de synchronisation...")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+            }
+            
+            // Barre de progression
+            if vm.store.isSyncing {
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // Fond de la barre
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 6)
+                        
+                        // Progression
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [.blue, .cyan],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: geometry.size.width * vm.store.syncProgress, height: 6)
+                            .animation(.easeInOut(duration: 0.3), value: vm.store.syncProgress)
+                    }
+                }
+                .frame(height: 6)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(UIColor.secondarySystemBackground).opacity(0.5))
+        )
+    }
+    
+    private func updateLastSyncDate() {
+        lastSyncDate = SharePointSyncService.shared.lastSyncDate
+    }
+    
+    private func timeAgo(from date: Date) -> String {
+        let seconds = Int(Date().timeIntervalSince(date))
+        
+        if seconds < 60 {
+            return "il y a \(seconds)s"
+        } else if seconds < 3600 {
+            let minutes = seconds / 60
+            return "il y a \(minutes)min"
+        } else if seconds < 86400 {
+            let hours = seconds / 3600
+            return "il y a \(hours)h"
+        } else {
+            let days = seconds / 86400
+            return "il y a \(days)j"
+        }
+    }
 
     // MARK: - Section 3: Graphique de Répartition
 
@@ -166,7 +250,13 @@ struct DashboardView: View {
                     subtitle: "Ajoutez des conducteurs pour voir leur progression"
                 )
             } else {
-                VStack(spacing: 16) {
+                // Grille adaptative : s'adapte à la largeur disponible pour éviter les colonnes "vides"
+                let minCardWidth: CGFloat = (hSizeClass == .regular) ? 360 : 280
+                let columns = [
+                    GridItem(.adaptive(minimum: minCardWidth), spacing: 12, alignment: .top)
+                ]
+
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
                     ForEach(sortedDrivers) { driver in
                         DriverTriennialCard(driver: driver, checklist: vm.store.checklist)
                             .onTapGesture {
@@ -187,10 +277,11 @@ struct DashboardView: View {
 
     private var sortedDrivers: [DriverRecord] {
         guard let checklist = vm.store.checklist else {
-            return vm.store.drivers.sorted { $0.name < $1.name }
+            let sorted = vm.store.drivers.sorted { $0.name < $1.name }
+            return deduplicatedDrivers(sorted)
         }
         
-        return vm.store.drivers.sorted { d1, d2 in
+        let sorted = vm.store.drivers.sorted { d1, d2 in
             switch sortOption {
             case .name:
                 return d1.name < d2.name
@@ -207,21 +298,36 @@ struct DashboardView: View {
                 
             case .completion:
                 let q = checklist.questions
-                let k = checklist.title
                 
                 // Calcul score d1
-                let m1 = d1.checklistStates[k] ?? [:]
+                let k1 = d1.resolveDataKey(for: checklist)
+                let m1 = d1.checklistStates[k1] ?? [:]
                 let v1 = q.filter { m1[$0.id.uuidString] == 2 }.count
                 let p1 = Double(v1) / max(Double(q.count), 1)
                 
                 // Calcul score d2
-                let m2 = d2.checklistStates[k] ?? [:]
+                let k2 = d2.resolveDataKey(for: checklist)
+                let m2 = d2.checklistStates[k2] ?? [:]
                 let v2 = q.filter { m2[$0.id.uuidString] == 2 }.count
                 let p2 = Double(v2) / max(Double(q.count), 1)
                 
                 return p1 > p2 // Descendant
             }
         }
+        
+        return deduplicatedDrivers(sorted)
+    }
+
+    private func deduplicatedDrivers(_ drivers: [DriverRecord]) -> [DriverRecord] {
+        var seen = Set<UUID>()
+        var result: [DriverRecord] = []
+        result.reserveCapacity(drivers.count)
+        for driver in drivers {
+            if seen.insert(driver.id).inserted {
+                result.append(driver)
+            }
+        }
+        return result
     }
 
     private var conformDriversCount: Int {
@@ -230,7 +336,7 @@ struct DashboardView: View {
         guard !questions.isEmpty else { return 0 }
 
         return vm.store.drivers.filter { driver in
-            let key = checklist.title
+            let key = driver.resolveDataKey(for: checklist)
             let map = driver.checklistStates[key] ?? [:]
             let validated = questions.filter { map[$0.id.uuidString] == 2 }.count
             let progress = Double(validated) / Double(questions.count)
@@ -256,7 +362,7 @@ struct DashboardView: View {
         var notEvaluated = 0
 
         for driver in vm.store.drivers {
-            let key = checklist.title
+            let key = driver.resolveDataKey(for: checklist)
             let map = driver.checklistStates[key] ?? [:]
 
             if map.isEmpty {
@@ -545,7 +651,7 @@ struct DriverDetailSheet: View {
                 // Progression
                 if let checklist = vm.store.checklist {
                     let questions = checklist.questions
-                    let key = checklist.title
+                    let key = driver.resolveDataKey(for: checklist)
                     let map = driver.checklistStates[key] ?? [:]
                     let validated = questions.filter { map[$0.id.uuidString] == 2 }.count
                     let partial = questions.filter { map[$0.id.uuidString] == 1 }.count
@@ -622,4 +728,3 @@ struct StatBadge: View {
         DashboardView(vm: ViewModel())
     }
 }
-

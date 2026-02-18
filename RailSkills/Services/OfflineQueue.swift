@@ -196,6 +196,10 @@ class OfflineQueue: ObservableObject {
             return true
             
         case .checklistUpdate, .checklistCreate:
+            if !AppConfigurationService.shared.allowChecklistUpload {
+                Logger.info("Synchronisation checklist désactivée : opération ignorée", category: "OfflineQueue")
+                return true
+            }
             // Décoder la checklist
             let decoder = JSONDecoder()
             guard let checklist = try? decoder.decode(Checklist.self, from: operation.data) else {
@@ -299,5 +303,4 @@ class NetworkMonitor: ObservableObject {
 extension Notification.Name {
     static let offlineQueueProcessed = Notification.Name("offlineQueueProcessed")
 }
-
 

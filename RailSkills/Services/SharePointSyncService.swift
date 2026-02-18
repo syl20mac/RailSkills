@@ -18,13 +18,25 @@ class SharePointSyncService: ObservableObject {
     private let azureADService = AzureADService.shared
     
     @Published var isSyncing = false
-    @Published var lastSyncDate: Date?
+    @Published var lastSyncDate: Date? {
+        didSet {
+            if let date = lastSyncDate {
+                UserDefaults.standard.set(date, forKey: Self.lastSyncDateKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.lastSyncDateKey)
+            }
+        }
+    }
     @Published var syncError: String?
     @Published var siteId: String?
     
     private var cachedSiteId: String?
     
-    private init() {}
+    private init() {
+        lastSyncDate = UserDefaults.standard.object(forKey: Self.lastSyncDateKey) as? Date
+    }
+    
+    private static let lastSyncDateKey = "railskills_last_sync_date"
     
     // MARK: - Helpers JSON
     
@@ -223,19 +235,19 @@ class SharePointSyncService: ObservableObject {
             // Synchroniser chaque conducteur dans son propre répertoire
             for driver in drivers {
                 do {
-                    // Utiliser l'ID du conducteur comme nom de dossier pour garantir la cohérence avec le web
-                    // Le web utilise également driver.id comme nom de dossier
-                    let folderName = driver.id.uuidString
+                    // Utiliser le nouveau format de nommage standard : [CP] NOM Prénom
+                    // Cela garantit la cohérence avec le backend Web et une meilleure lisibilité
+                    let folderName = generateSharedFolderName(for: driver)
                     let driverFolderPath = "\(basePath)/\(folderName)"
                     
-                    Logger.info("Synchronisation du conducteur '\(driver.name)' (ID: \(folderName))", category: "SharePointSync")
+                    Logger.info("Synchronisation du conducteur '\(driver.name)' (Dossier: \(folderName))", category: "SharePointSync")
                     
                     try await ensureFolderExists(siteId: siteId, folderPath: driverFolderPath)
                     
                     // Convertir UN SEUL conducteur en JSON (pas toute la liste)
                     let data = try encoder.encode(driver)
                     
-                    // Nom du fichier basé sur l'ID (cohérent avec le web)
+                    // Nom du fichier doit correspondre au nom du dossier pour la détection
                     let fileName = "\(folderName).json"
                     
                     Logger.debug("Fichier à créer: \(driverFolderPath)/\(fileName)", category: "SharePointSync")
@@ -341,6 +353,29 @@ class SharePointSyncService: ObservableObject {
         
         return sanitized
     }
+
+    /// Génère le nom de dossier standardisé pour un conducteur
+    /// Format : "[CP] NOM Prénom" (pour correspondre au backend Web)
+    private func generateSharedFolderName(for driver: DriverRecord) -> String {
+        let name = driver.name.uppercased().trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        let firstName = (driver.firstName ?? "").trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        let cp = (driver.cpNumber ?? "").uppercased().trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        
+        var baseName = ""
+        if !cp.isEmpty {
+            baseName = "[\(cp)] \(name) \(firstName)"
+        } else {
+            baseName = "\(name) \(firstName)"
+        }
+        
+        // Nettoyage manuel similaire au backend
+        // Note: On n'utilise pas sanitizeFolderName ici car on veut garder les espaces
+        // mais on doit supprimer les caractères interdits
+        let forbiddenChars = CharacterSet(charactersIn: "<>:\"/\\|?*")
+        let cleanName = baseName.components(separatedBy: forbiddenChars).joined(separator: "_")
+        
+        return cleanName.trimmingCharacters(in: CharacterSet.whitespaces)
+    }
     
     /// Synchronise la checklist vers SharePoint
     /// Structure : RailSkills/Checklists/{titre}_timestamp.json (espace global partagé)
@@ -358,6 +393,12 @@ class SharePointSyncService: ObservableObject {
             Logger.info("Mode local activé : synchronisation checklist ignorée", category: "SharePointSync")
             return
         }
+        
+        guard AppConfigurationService.shared.allowChecklistUpload else {
+            syncError = SharePointSyncError.checklistUploadDisabled.errorDescription
+            Logger.warning("Synchronisation checklist désactivée par la configuration", category: "SharePointSync")
+            throw SharePointSyncError.checklistUploadDisabled
+        }
 
         guard isConfigured else {
             throw SharePointSyncError.notConfigured
@@ -372,11 +413,20 @@ class SharePointSyncService: ObservableObject {
         
         do {
             let siteId = try await getSiteId()
+
+            // Filtrer les items readOnly pour éviter toute modification des checklists d'origine
+            let filteredItems = checklist.items.filter { $0.readOnly != true }
+            let checklistToUpload = Checklist(
+                title: checklist.title,
+                items: filteredItems,
+                ownerSNCFId: checklist.ownerSNCFId,
+                type: checklist.type
+            )
             
             // Convertir en JSON
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
-            let data = try encoder.encode(checklist)
+            let data = try encoder.encode(checklistToUpload)
             
             // Chemin segmenté par CTT pour les checklists
             // Le cttFolder contient déjà "CTT_" donc on l'utilise directement
@@ -1185,14 +1235,184 @@ class SharePointSyncService: ObservableObject {
         let data = try await azureADService.authenticatedRequest(endpoint: endpoint)
         
         // Décoder la checklist
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        let decoder = createFlexibleJSONDecoder()
         
         let checklist = try decoder.decode(Checklist.self, from: data)
         
         Logger.success("Checklist téléchargée: \(checklist.title) avec \(checklist.items.count) éléments", category: "SharePointSync")
         
         return checklist
+    }
+
+    // MARK: - Synchronisation Complète des Checklists (Global + Local)
+
+    /// Récupère toutes les checklists (Globales + Locales) et les fusionne
+    /// - Returns: La liste des checklists fusionnées
+    func fetchAllChecklists() async throws -> [Checklist] {
+        guard isConfigured else {
+            throw SharePointSyncError.notConfigured
+        }
+        
+        Logger.info("Démarrage de la synchronisation complète des checklists...", category: "SharePointSync")
+        
+        async let globalChecklists = fetchGlobalChecklists()
+        async let localChecklists = fetchLocalChecklists()
+        
+        let (global, local) = try await (globalChecklists, localChecklists)
+        
+        let merged = mergeChecklists(global: global, local: local)
+        
+        Logger.success("Synchronisation terminée : \(merged.count) checklist(s) au total (dont \(global.count) globales)", category: "SharePointSync")
+        
+        return merged
+    }
+
+    /// Récupère les checklists globales depuis plusieurs emplacements potentiels
+    /// Chemins vérifiés (par ordre de priorité) :
+    /// 1. RailSkills/Global/Checklists (Structure cible)
+    /// 2. RailSkills/Checklists (Structure actuelle, confirmée par screenshot)
+    /// 3. RailSkills/checklist (Variante singulier demandée par utilisateur)
+    /// 4. RailSkills/Checklist (Variante singulier Majuscule)
+    private func fetchGlobalChecklists() async throws -> [Checklist] {
+        let searchPaths = [
+            "RailSkills/Global/Checklists",
+            "RailSkills/Checklists",
+            "RailSkills/checklist",
+            "RailSkills/Checklist"
+        ]
+        
+        var processedChecklists: [Checklist] = []
+        var processedTitles = Set<String>()
+        
+        Logger.info("Recherche des checklists globales dans: \(searchPaths.joined(separator: ", "))", category: "SharePointSync")
+        
+        for path in searchPaths {
+            do {
+                let lists = try await fetchChecklistsFromFolder(path: path)
+                
+                if !lists.isEmpty {
+                    Logger.info("Trouvé \(lists.count) checklist(s) dans '\(path)'", category: "SharePointSync")
+                    
+                    for var checklist in lists {
+                        // Si pas déjà traité via un chemin prioritaire
+                        if !processedTitles.contains(checklist.title) {
+                            // Marquer comme ReadOnly (les checklists globales sont toujours en lecture seule)
+                            var newItems: [ChecklistItem] = []
+                            for var item in checklist.items {
+                                item.readOnly = true
+                                newItems.append(item)
+                            }
+                            checklist.items = newItems
+                            
+                            processedChecklists.append(checklist)
+                            processedTitles.insert(checklist.title)
+                            Logger.debug("Checklist globale chargée: \(checklist.title) (depuis \(path))", category: "SharePointSync")
+                        }
+                    }
+                }
+            } catch {
+                // Le dossier peut ne pas exister, ce n'est pas une erreur critique tant qu'on en trouve ailleurs
+                Logger.debug("Avertissement lors de la lecture de '\(path)': \(error.localizedDescription)", category: "SharePointSync")
+            }
+        }
+        
+        if processedChecklists.isEmpty {
+            Logger.warning("Aucune checklist globale trouvée dans les chemins: \(searchPaths.joined(separator: ", "))", category: "SharePointSync")
+        } else {
+            Logger.success("Total checklists globales chargées: \(processedChecklists.count)", category: "SharePointSync")
+        }
+        
+        return processedChecklists
+    }
+
+    /// Récupère les checklists locales depuis RailSkills/{CTT}/Checklists
+    private func fetchLocalChecklists() async throws -> [Checklist] {
+        let cttFolder = getCTTFolderName()
+        let path = "RailSkills/\(cttFolder)/Checklists"
+        Logger.info("Récupération des checklists locales depuis \(path)", category: "SharePointSync")
+        
+        do {
+            return try await fetchChecklistsFromFolder(path: path)
+        } catch {
+            // Si le dossier n'existe pas encore (nouveau CTT), ce n'est pas une erreur critique
+            Logger.warning("Impossible de récupérer les checklists locales (dossier inexistant ?): \(error.localizedDescription)", category: "SharePointSync")
+            return []
+        }
+    }
+
+    /// Helper générique pour récupérer les checklists d'un dossier
+    private func fetchChecklistsFromFolder(path: String) async throws -> [Checklist] {
+        guard isConfigured else { return [] }
+        let siteId = try await getSiteId()
+        
+        let endpoint = "/sites/\(siteId)/drive/root:/\(path):/children"
+        
+        do {
+            let data = try await azureADService.authenticatedRequest(endpoint: endpoint)
+            
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let files = json["value"] as? [[String: Any]] else {
+                return []
+            }
+            
+            var checklists: [Checklist] = []
+            
+            for file in files {
+                guard let name = file["name"] as? String,
+                      name.hasSuffix(".json"),
+                      !name.contains("_backup") else { continue }
+                
+                let filePath = "\(path)/\(name)"
+                do {
+                    let checklist = try await downloadChecklist(from: filePath)
+                    checklists.append(checklist)
+                } catch {
+                    Logger.error("Echec du téléchargement/décodage de la checklist '\(name)': \(error.localizedDescription)", category: "SharePointSync")
+                }
+            }
+            
+            return checklists
+        } catch {
+            // Ignorer si dossier non trouvé
+            return []
+        }
+    }
+
+    /// Fusionne les checklists globales et locales
+    private func mergeChecklists(global: [Checklist], local: [Checklist]) -> [Checklist] {
+        var mergedMap: [String: Checklist] = [:]
+        
+        // 1. Ajouter les globales (base)
+        for globalChecklist in global {
+            mergedMap[globalChecklist.title] = globalChecklist
+        }
+        
+        // 2. Fusionner avec les locales
+        for localChecklist in local {
+            if var existingGlobal = mergedMap[localChecklist.title] {
+                // Fusion : Garder les items globaux (readOnly) et ajouter les items locaux UNIQUES
+                
+                // Identifier les IDs ou Titres existants pour éviter les doublons
+                // On se base sur le titre pour la déduplication simple si ID diffère
+                let existingTitles = Set(existingGlobal.items.map { $0.title.lowercased() })
+                
+                for item in localChecklist.items {
+                    // Ajouter seulement si ce n'est pas une copie d'un item global
+                    // ET si ce n'est pas marqué readOnly (car les items readOnly viennent du Global)
+                    if item.readOnly != true && !existingTitles.contains(item.title.lowercased()) {
+                        existingGlobal.items.append(item)
+                    }
+                }
+                
+                mergedMap[localChecklist.title] = existingGlobal
+                Logger.info("Fusion effectuée pour la checklist : \(localChecklist.title)", category: "SharePointSync")
+            } else {
+                // C'est une checklist purement locale
+                mergedMap[localChecklist.title] = localChecklist
+            }
+        }
+        
+        return Array(mergedMap.values).sorted { $0.title < $1.title }
     }
 }
 
@@ -1511,6 +1731,7 @@ enum SharePointSyncError: Error, LocalizedError {
     case invalidResponse(String)
     case invalidRequest
     case uploadFailed(String)
+    case checklistUploadDisabled
     
     var errorDescription: String? {
         switch self {
@@ -1524,7 +1745,8 @@ enum SharePointSyncError: Error, LocalizedError {
             return "Requête invalide"
         case .uploadFailed(let message):
             return "Échec du téléversement: \(message)"
+        case .checklistUploadDisabled:
+            return "L'envoi des checklists est désactivé par la configuration."
         }
     }
 }
-

@@ -9,7 +9,7 @@
 
 ## 0. Résumé exécutif
 
-RailSkills fournit aux **Cadres Transport Traction (CTT)** et **Adjoints Référents Conduite (ARC)** un outil mobile pour piloter les suivis réglementaires des conducteurs SNCF circulant au Luxembourg. L'application, entièrement locale et synchronisable via iCloud, offre :
+RailSkills fournit aux **Cadres Transport Traction (CTT)** et **Adjoints Référents Conduite (ARC)** un outil mobile pour piloter les suivis réglementaires des conducteurs SNCF circulant au Luxembourg. L'application, **hybride avec mode déconnecté**, se synchronise avec SharePoint via un Backend sécurisé et offre :
 
 - Gestion complète des conducteurs et des échéances triennales.
 - Suivi détaillé des checklists dynamiques (importées via JSON/texte).
@@ -24,7 +24,7 @@ RailSkills fournit aux **Cadres Transport Traction (CTT)** et **Adjoints Référ
 ## 1. Objectifs produit
 
 1. Garantir la traçabilité réglementaire (suivis triennaux, signatures numériques futures).
-2. Centraliser les dossiers conducteurs sans dépendre d'un réseau externe.
+2. Centraliser les dossiers conducteurs avec **synchronisation SharePoint** (source de vérité unique).
 3. Simplifier la collaboration entre CTT/ARC (imports/exports, QR codes, fusion intelligente).
 4. Offrir une UX adaptée terrain : gestes rapides, filtres, mode sombre, accessibilité.
 5. Faciliter l'export de données pour traitement externe (Excel via CSV).
@@ -156,7 +156,8 @@ RailSkills fournit aux **Cadres Transport Traction (CTT)** et **Adjoints Référ
 
 ### 4.3 Checklist dynamique
 - Checklist vide au lancement (pas de données embarquées).
-- Import depuis JSON/Markdown (via `ChecklistParser`).
+- **Synchronisation automatique** depuis SharePoint (via Backend) au lancement.
+- Import depuis JSON/Markdown (via `ChecklistParser`) possible en secours.
 - Édition :
   - Ajout question/catégorie (id UUID, titre par défaut).
   - Conversion type (conserve id, notes, état).
@@ -230,7 +231,8 @@ RailSkills fournit aux **Cadres Transport Traction (CTT)** et **Adjoints Référ
   - `drivers` `[DriverRecord]` (id, name, triennialStart, states, notes, dates).
   - `checklist` `Checklist?` (title, items).
 - Sauvegarde automatique sur modification (Combine `sink`).
-- iCloud (Key-Value Store) pour drivers/checklist ; fallback UserDefaults si non activé.
+- **SharePoint Sync** : Synchronisation bidirectionnelle (Conducteurs) et unidirectionnelle (Checklists) via Backend.
+- iCloud (Key-Value Store) pour settings; fallback UserDefaults.
 - `Logger` pour traces (info, warning, success, error).
 
 ### 5.3 Modules & composants
@@ -253,6 +255,7 @@ RailSkills fournit aux **Cadres Transport Traction (CTT)** et **Adjoints Référ
 - `QRCodeService` : Génération QR codes.
 - `ExportService` : Export/Import JSON, CSV avec compression et chiffrement.
 - `EncryptionService` : Chiffrement AES-GCM avec secret organisationnel.
+- `SharePointSyncService` : Synchronisation avec SharePoint via Backend.
 - `ValidationService` : Validation et sanitisation des données.
 - `ToastNotificationManager` : Gestion des notifications toast.
 
@@ -295,8 +298,9 @@ struct DriverRecord: Identifiable, Codable, Hashable {
 
 ## 7. Sécurité & conformité
 
-- Données toujours locales (UserDefaults) + option iCloud KVS.
-- Pas de backend externe.
+- Données toujours locales (UserDefaults) pour mode hors-ligne.
+- **Backend RailSkills** : Proxy sécurisé vers SharePoint (pas de stockage permanent métier).
+- Authentification Azure AD via Backend.
 - Export sur action explicite (JSON / PDF / CSV / QR).
 - **Chiffrement optionnel** (AES-GCM) pour exports JSON via secret organisationnel.
 - Gestion des clés de chiffrement dans les réglages (partage QR).

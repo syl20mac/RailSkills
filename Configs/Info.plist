@@ -7,13 +7,14 @@
 	<key>CFBundleExecutable</key>
 	<string>RailSkills</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.railskills.syl20.org.RailSkills</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleName</key>
 	<string>RailSkills</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.2</string>
+
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -30,11 +31,13 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Le microphone peut être utilisé pour la dictée vocale des notes d'évaluation.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>La reconnaissance vocale peut être utilisée pour la dictée de notes dans les évaluations.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>L'appareil photo est utilisé pour scanner le QR Code de configuration entreprise.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -25,6 +25,9 @@ struct ChecklistTabView: View {
     @State private var searchDebounceTask: Task<Void, Never>?
     @State private var showingQuickEvalMode = false
     @State private var showingShareSheet = false
+    @State private var isSyncing = false
+    @State private var showingSyncAlert = false
+    @State private var syncAlertMessage = ""
     
     /// Checklist actuelle selon le type
     private var currentChecklist: Checklist? {
@@ -58,6 +61,9 @@ struct ChecklistTabView: View {
             if let checklist = currentChecklist {
                 ChecklistExportView(checklist: checklist, checklistType: checklistType)
             }
+        }
+        .alert(syncAlertMessage, isPresented: $showingSyncAlert) {
+            Button("OK", role: .cancel) { }
         }
     }
     
@@ -403,14 +409,7 @@ struct ChecklistTabView: View {
                 Label("Ajouter un conducteur", systemImage: "person.badge.plus")
             }
             
-            if currentChecklist != nil && canInteractWithChecklist {
-                Button {
-                    showingQuickEvalMode = true
-                } label: {
-                    Label("Mode évaluation rapide", systemImage: "bolt.fill")
-                }
-            }
-            
+            /*
             if currentChecklist != nil {
                 Button {
                     showingShareSheet = true
@@ -418,9 +417,54 @@ struct ChecklistTabView: View {
                     Label("Partager", systemImage: "square.and.arrow.up")
                 }
             }
+            */
+            
+            Divider()
+            
+            Button {
+                isSyncing = true
+                Task {
+                    let success = await vm.store.forceDownloadChecklist()
+                    isSyncing = false
+                    syncAlertMessage = success ? "Synchronisation réussie !" : "Échec de la synchronisation. Vérifiez votre connexion."
+                    showingSyncAlert = true
+                }
+            } label: {
+                if isSyncing {
+                    Label("Synchronisation en cours...", systemImage: "arrow.triangle.2.circlepath")
+                } else {
+                    Label("Forcer la synchronisation", systemImage: "arrow.triangle.2.circlepath")
+                }
+            }
+            
+            // Menu de changement de checklist Suivi (si disponible et multiple)
+            if checklistType == .triennale && vm.store.availableSuiviChecklists.count > 1 {
+                Divider()
+                
+                Menu {
+                    ForEach(vm.store.availableSuiviChecklists, id: \.title) { checklist in
+                        Button {
+                            vm.store.selectSuiviChecklist(checklist.title)
+                        } label: {
+                            if currentChecklist?.title == checklist.title {
+                                Label(checklist.title, systemImage: "checkmark")
+                            } else {
+                                Text(checklist.title)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Changer de Suivi", systemImage: "arrow.triangle.swap")
+                }
+            }
         } label: {
-            Image(systemName: "ellipsis.circle")
-                .frame(width: 44, height: 44)
+            if isSyncing {
+                ProgressView()
+                    .frame(width: 44, height: 44)
+            } else {
+                Image(systemName: "ellipsis.circle")
+                    .frame(width: 44, height: 44)
+            }
         }
     }
     

@@ -321,7 +321,35 @@ struct DriversManagerView: View {
                 )
             } header: {
                 Text("Informations")
-            } footer: {
+            }
+            
+            // Section dynamique pour les Accompagnements et JFC (par année)
+            if let additionalInfo = vm.store.drivers[index].additionalInfo, !additionalInfo.isEmpty {
+                Section {
+                    ForEach(groupedAdditionalInfo(additionalInfo), id: \.year) { group in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Année \(group.year)")
+                                .font(.headline)
+                                .foregroundStyle(.blue)
+                            
+                            if let acc1 = group.items["acc1"] {
+                                LabeledContent("Accompagnement 1", value: acc1)
+                            }
+                            if let acc2 = group.items["acc2"] {
+                                LabeledContent("Accompagnement 2", value: acc2)
+                            }
+                            if let jfc = group.items["jfc"] {
+                                LabeledContent("JFC", value: jfc)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                } header: {
+                    Text("Suivi Annuel")
+                }
+            }
+            
+            Section {
                 Text("Les champs marqués d'un astérisque (*) sont obligatoires.")
                     .foregroundStyle(.secondary)
                     .font(.caption)
@@ -428,6 +456,61 @@ struct DriversManagerView: View {
                 .fontWeight(.semibold)
             }
         }
+    }
+    
+    // MARK: - Helpers UI
+    
+    struct YearGroup {
+        let year: String
+        var items: [String: String] // type -> dateString (ex: "acc1" -> "12/03/2026")
+    }
+    
+    private func groupedAdditionalInfo(_ info: [String: String]) -> [YearGroup] {
+        var groups: [String: YearGroup] = [:]
+        
+        for (key, value) in info {
+            // Clés attendues: acc1_2026, acc2_2026, jfc_2026
+            let components = key.split(separator: "_")
+            if components.count == 2 {
+                let type = String(components[0]) // acc1, acc2, jfc
+                let year = String(components[1]) // 2026
+                
+                // Vérifier si l'année est valide (4 chiffres)
+                if year.count == 4, Int(year) != nil {
+                    if groups[year] == nil {
+                        groups[year] = YearGroup(year: year, items: [:])
+                    }
+                    
+                    // Formater la date si c'est une date ISO
+                    var displayValue = value
+                    if value.contains("T") {
+                        let isoFormatter = ISO8601DateFormatter()
+                        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                        if let date = isoFormatter.date(from: value) {
+                            let displayFormatter = DateFormatter()
+                            displayFormatter.dateStyle = .medium
+                            displayFormatter.timeStyle = .none
+                            displayFormatter.locale = Locale(identifier: "fr_FR")
+                            displayValue = displayFormatter.string(from: date)
+                        } else {
+                            // Essayer format ISO simple
+                            isoFormatter.formatOptions = [.withInternetDateTime]
+                             if let date = isoFormatter.date(from: value) {
+                                let displayFormatter = DateFormatter()
+                                displayFormatter.dateStyle = .medium
+                                displayFormatter.locale = Locale(identifier: "fr_FR")
+                                displayValue = displayFormatter.string(from: date)
+                            }
+                        }
+                    }
+                    
+                    groups[year]?.items[type] = displayValue
+                }
+            }
+        }
+        
+        // Trier par année décroissante (2027, 2026...)
+        return groups.values.sorted { $0.year > $1.year }
     }
 }
 

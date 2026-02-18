@@ -12,6 +12,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4E0D91472F45BEDD00564ED6 /* RailSkills.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = RailSkills.xcodeproj; sourceTree = "<group>"; };
+		4E0D928B2F45BEDD00564ED6 /* RailSkills.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = RailSkills.xcodeproj; sourceTree = "<group>"; };
 		4E5D17022F3C7E3C00D9F47C /* fix-build-errors.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "fix-build-errors.sh"; sourceTree = "<group>"; };
 		4E5D17042F3C7E5C00D9F47C /* FIX_BUILD_ERRORS_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FIX_BUILD_ERRORS_GUIDE.md; sourceTree = "<group>"; };
 		4E8C12A72EE03FD50037613D /* RailSkills.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RailSkills.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,6 +54,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4E0D93332F45BEDD00564ED6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4E0D93352F45BEDD00564ED6 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		4E8C129E2EE03FD50037613D = {
 			isa = PBXGroup;
 			children = (
@@ -136,6 +152,14 @@
 				{
 					ProductGroup = 4EC812962F45BBF80041DA92 /* Products */;
 					ProjectRef = 4EC811EF2F45BBF80041DA92 /* RailSkills.xcodeproj */;
+				},
+				{
+					ProductGroup = 4E0D93352F45BEDD00564ED6 /* Products */;
+					ProjectRef = 4E0D928B2F45BEDD00564ED6 /* RailSkills.xcodeproj */;
+				},
+				{
+					ProductGroup = 4E0D93332F45BEDD00564ED6 /* Products */;
+					ProjectRef = 4E0D91472F45BEDD00564ED6 /* RailSkills.xcodeproj */;
 				},
 				{
 					ProductGroup = 4EC816B62F45BC450041DA92 /* Products */;

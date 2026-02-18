@@ -176,19 +176,22 @@ struct SettingsView: View {
                             }
                         }
                     } else {
-                        NavigationLink {
-                            LoginView()
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: "person.badge.plus")
-                                    .foregroundStyle(Color.blue)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Se connecter")
-                                        .font(.subheadline.weight(.medium))
-                                    Text("Créer un compte ou se connecter")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                        // N'afficher l'option de connexion que si on n'est PAS en mode local
+                        if !AppConfigurationService.shared.isLocalMode {
+                            NavigationLink {
+                                LoginView()
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "person.badge.plus")
+                                        .foregroundStyle(Color.blue)
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Se connecter")
+                                            .font(.subheadline.weight(.medium))
+                                        Text("Créer un compte ou se connecter")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                             }
                         }

@@ -35,7 +35,7 @@ struct SharingView: View {
     var body: some View {
         NavigationStack {
             Group {
-                // Afficher la vue d'import si la checklist est nil ou vide
+                // Afficher la vue d'import si le suivi est nil ou vide
                 if vm.store.checklist == nil || vm.store.checklist?.items.isEmpty == true {
                     ChecklistImportWelcomeView(vm: vm)
                 } else {
@@ -615,6 +615,7 @@ struct SharingView: View {
     private var checklistSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             // En-tête de section
+            // En-tête de section
             HStack(spacing: 12) {
                 Image(systemName: "doc.text.fill")
                     .font(.title2)
@@ -625,7 +626,7 @@ struct SharingView: View {
                             endPoint: .trailing
                         )
                     )
-                Text("Checklist")
+                Text("Suivi")
                     .font(.title2)
                     .fontWeight(.bold)
                 Spacer()
@@ -634,7 +635,7 @@ struct SharingView: View {
             
             if let checklist = vm.store.checklist {
                 VStack(alignment: .leading, spacing: 18) {
-                    // Informations de la checklist avec badge
+                    // Informations du suivi avec badge
                     HStack {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(checklist.title)
@@ -674,7 +675,7 @@ struct SharingView: View {
                                 Image(systemName: "square.and.arrow.up.fill")
                                     .font(.system(size: 18, weight: .semibold))
                             }
-                            Text("Exporter la checklist")
+                            Text("Exporter le suivi")
                                 .fontWeight(.semibold)
                             Spacer()
                             if !isExportingChecklist {
@@ -702,10 +703,10 @@ struct SharingView: View {
                         .font(.title3)
                         .foregroundStyle(SNCFColors.lavande.opacity(0.7))
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Aucune checklist chargée")
+                        Text("Aucun suivi chargé")
                             .font(.headline)
                             .foregroundStyle(.primary)
-                        Text("Importez une checklist depuis un fichier JSON")
+                        Text("Importez un suivi depuis un fichier JSON")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -781,11 +782,7 @@ struct SharingView: View {
                             // Affiche le prénom et le nom du conducteur
                             Text(vm.store.drivers[i].fullName)
                                 .font(.headline)
-                            if let lastEval = vm.store.drivers[i].lastEvaluation {
-                                Text("Dernier suivi : \(DateFormatHelper.formatDate(lastEval))")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
+
                             if let checklist = vm.store.checklist {
                                 let progress = calculateProgress(for: i, checklist: checklist)
                                 Text("Progression : \(Int(progress * 100))%")

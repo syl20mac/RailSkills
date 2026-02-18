@@ -33,28 +33,50 @@ struct ChecklistEditorView: View {
     @State private var showingCategoryCreator = false
     @State private var pendingQuestionAction: (() -> Void)?
     @State private var selectedTab: Int = 0
+    @AppStorage("didForceChecklistReset") private var didForceChecklistReset = false
     
     var body: some View {
-        // Afficher la vue d'import si la checklist est nil ou vide
-        if vm.store.checklist == nil || vm.store.checklist?.items.isEmpty == true {
-            NavigationStack {
-                ChecklistImportWelcomeView(vm: vm)
+        VStack(spacing: 0) {
+            // Sélecteur de type de checklist
+            Picker("Type de checklist", selection: Binding(
+                get: { vm.store.selectedChecklistType },
+                set: { vm.store.selectedChecklistType = $0 }
+            )) {
+                ForEach(ChecklistType.allCases, id: \.self) { type in
+                    Text(type.displayTitle).tag(type)
+                }
             }
-        } else {
-            TabView(selection: $selectedTab) {
-                // Onglet 1 : Édition des questions et catégories
-                checklistEditorTab
-                    .tabItem {
-                        Label("Questions", systemImage: "list.bullet.rectangle")
-                    }
-                    .tag(0)
-                
-                // Onglet 2 : Gestion des conducteurs
-                driversManagementTab
-                    .tabItem {
-                        Label("Conducteurs", systemImage: "person.2.fill")
-                    }
-                    .tag(1)
+            .pickerStyle(.segmented)
+            .padding()
+            .background(Color(UIColor.secondarySystemBackground))
+            
+            // Contenu principal
+            if vm.store.checklist == nil || vm.store.checklist?.items.isEmpty == true {
+                NavigationStack {
+                    ChecklistImportWelcomeView(vm: vm, checklistType: vm.store.selectedChecklistType)
+                }
+            } else {
+                TabView(selection: $selectedTab) {
+                    // Onglet 1 : Édition des questions et catégories
+                    checklistEditorTab
+                        .tabItem {
+                            Label("Questions", systemImage: "list.bullet.rectangle")
+                        }
+                        .tag(0)
+                    
+                    // Onglet 2 : Gestion des conducteurs
+                    driversManagementTab
+                        .tabItem {
+                            Label("Conducteurs", systemImage: "person.2.fill")
+                        }
+                        .tag(1)
+                }
+            }
+        }
+        .task {
+            if !didForceChecklistReset {
+                await vm.store.resetChecklistsPreservingPersonalItems()
+                didForceChecklistReset = true
             }
         }
     }
@@ -68,12 +90,15 @@ struct ChecklistEditorView: View {
                     if let checklist = vm.store.checklist, !checklist.items.isEmpty {
                         let enumeratedItems = Array(checklist.items.enumerated())
                         ForEach(enumeratedItems, id: \.element.id) { entry in
-                            editorRow(for: entry.element, at: entry.offset)
+                            let isReadOnly = vm.store.isItemReadOnly(entry.element)
+                            editorRow(for: entry.element, at: entry.offset, isReadOnly: isReadOnly)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        prepareDeletion(at: entry.offset)
-                                    } label: {
-                                        Label("Supprimer", systemImage: "trash")
+                                    if !isReadOnly {
+                                        Button(role: .destructive) {
+                                            prepareDeletion(at: entry.offset)
+                                        } label: {
+                                            Label("Supprimer", systemImage: "trash")
+                                        }
                                     }
                                 }
                         }
@@ -323,8 +348,10 @@ struct ChecklistEditorView: View {
     // MARK: - Helper Methods
     
     private func addCategory() {
-        let new = ChecklistItem(title: "Nouvelle catégorie", isCategory: true)
+        var new = ChecklistItem(title: "Nouvelle catégorie", isCategory: true)
+        new.readOnly = false
         vm.store.checklist?.items.append(new)
+        vm.store.registerPersonalChecklistItem(new.id)
         Logger.info("Catégorie ajoutée", category: "ChecklistEditor")
     }
     
@@ -332,14 +359,18 @@ struct ChecklistEditorView: View {
     private func addCategory(with name: String) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let categoryName = trimmedName.isEmpty ? "Nouvelle catégorie" : trimmedName
-        let new = ChecklistItem(title: categoryName, isCategory: true)
+        var new = ChecklistItem(title: categoryName, isCategory: true)
+        new.readOnly = false
         vm.store.checklist?.items.append(new)
+        vm.store.registerPersonalChecklistItem(new.id)
         Logger.info("Catégorie ajoutée avec nom: \(categoryName)", category: "ChecklistEditor")
     }
     
     private func addQuestion() {
-        let new = ChecklistItem(title: "Nouvelle question", isCategory: false)
+        var new = ChecklistItem(title: "Nouvelle question", isCategory: false)
+        new.readOnly = false
         vm.store.checklist?.items.append(new)
+        vm.store.registerPersonalChecklistItem(new.id)
         Logger.info("Question ajoutée", category: "ChecklistEditor")
     }
     
@@ -347,8 +378,10 @@ struct ChecklistEditorView: View {
     private func addQuestion(with text: String) {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let questionText = trimmedText.isEmpty ? "Nouvelle question" : trimmedText
-        let new = ChecklistItem(title: questionText, isCategory: false)
+        var new = ChecklistItem(title: questionText, isCategory: false)
+        new.readOnly = false
         vm.store.checklist?.items.append(new)
+        vm.store.registerPersonalChecklistItem(new.id)
         Logger.info("Question ajoutée avec texte: \(questionText)", category: "ChecklistEditor")
     }
     
@@ -362,7 +395,8 @@ struct ChecklistEditorView: View {
             return
         }
         
-        let new = ChecklistItem(title: "Nouvelle question", isCategory: false)
+        var new = ChecklistItem(title: "Nouvelle question", isCategory: false)
+        new.readOnly = false
         
         // Trouver la position après la catégorie
         var insertIndex = categoryIndex + 1
@@ -379,6 +413,7 @@ struct ChecklistEditorView: View {
         // Insérer la nouvelle question à la position trouvée
         items.insert(new, at: insertIndex)
         vm.store.checklist?.items = items
+        vm.store.registerPersonalChecklistItem(new.id)
         Logger.info("Question ajoutée dans la catégorie à l'index \(categoryIndex), position finale: \(insertIndex)", category: "ChecklistEditor")
     }
     
@@ -394,7 +429,8 @@ struct ChecklistEditorView: View {
         
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let questionText = trimmedText.isEmpty ? "Nouvelle question" : trimmedText
-        let new = ChecklistItem(title: questionText, isCategory: false)
+        var new = ChecklistItem(title: questionText, isCategory: false)
+        new.readOnly = false
         
         // Trouver la position après la catégorie
         var insertIndex = categoryIndex + 1
@@ -411,6 +447,7 @@ struct ChecklistEditorView: View {
         // Insérer la nouvelle question à la position trouvée
         items.insert(new, at: insertIndex)
         vm.store.checklist?.items = items
+        vm.store.registerPersonalChecklistItem(new.id)
         Logger.info("Question ajoutée avec texte '\(questionText)' dans la catégorie à l'index \(categoryIndex), position finale: \(insertIndex)", category: "ChecklistEditor")
     }
     
@@ -423,14 +460,18 @@ struct ChecklistEditorView: View {
     }
     
     private func addQuestionAfterIndex(_ index: Int) {
-        let new = ChecklistItem(title: "Nouvelle question", isCategory: false)
+        var new = ChecklistItem(title: "Nouvelle question", isCategory: false)
+        new.readOnly = false
         vm.store.checklist?.items.insert(new, at: index + 1)
+        vm.store.registerPersonalChecklistItem(new.id)
         Logger.info("Question ajoutée après l'index \(index)", category: "ChecklistEditor")
     }
     
     private func addCategoryAfterIndex(_ index: Int) {
-        let new = ChecklistItem(title: "Nouvelle catégorie", isCategory: true)
+        var new = ChecklistItem(title: "Nouvelle catégorie", isCategory: true)
+        new.readOnly = false
         vm.store.checklist?.items.insert(new, at: index + 1)
+        vm.store.registerPersonalChecklistItem(new.id)
         Logger.info("Catégorie ajoutée après l'index \(index)", category: "ChecklistEditor")
     }
     
@@ -551,9 +592,10 @@ struct ChecklistEditorView: View {
 private extension ChecklistEditorView {
     /// Construit une ligne d'édition pour un élément de checklist avec l'ensemble des actions associées
     @ViewBuilder
-    func editorRow(for item: ChecklistItem, at index: Int) -> some View {
+    func editorRow(for item: ChecklistItem, at index: Int, isReadOnly: Bool) -> some View {
         ChecklistEditorRow(
             item: item,
+            isReadOnly: isReadOnly,
             onUpdate: { newTitle in
                 guard var checklist = vm.store.checklist,
                       checklist.items.indices.contains(index) else { return }
@@ -672,6 +714,3 @@ private extension ChecklistEditorView {
         processDriverImportResults()
     }
 }
-
-
-

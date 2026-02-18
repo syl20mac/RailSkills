@@ -34,10 +34,12 @@ class AppConfigurationService: ObservableObject {
     private let kBackendURL = "config_backend_url"
     private let kOrganizationName = "config_org_name"
     private let kOrganizationSecret = "config_org_secret"
+    private let kAllowChecklistUpload = "config_allow_checklist_upload"
     
     // MARK: - Properties
     
     @Published var isConfigured: Bool = false
+    @AppStorage("config_allow_checklist_upload") var allowChecklistUpload: Bool = true
     
     init() {
         self.isConfigured = checkConfiguration()
@@ -118,6 +120,7 @@ class AppConfigurationService: ObservableObject {
         defaults.removeObject(forKey: kBackendURL)
         defaults.removeObject(forKey: kOrganizationName)
         defaults.removeObject(forKey: kOrganizationSecret)
+        defaults.removeObject(forKey: kAllowChecklistUpload)
         
         // Retour au mode par défaut (setup) ou non configuré
         self.appMode = .setup

@@ -15,7 +15,8 @@ RailSkills/
 │   ├── ChecklistParser.swift       # Analyse et import de checklists
 │   ├── PDFReportGenerator.swift    # Génération de rapports PDF
 │   ├── QRCodeService.swift         # Génération et lecture de QR codes
-│   └── ExportService.swift         # Export/Import JSON avec compression
+│   ├── ExportService.swift         # Export/Import JSON avec compression
+│   └── SharePointSyncService.swift # Synchronisation Backend/SharePoint
 │
 ├── ViewModels/                      # ViewModels (logique métier)
 │   ├── AppViewModel.swift          # ViewModel principal
@@ -87,6 +88,7 @@ RailSkills/
 - **PDFReportGenerator** : Génération de rapports PDF avec en-têtes
 - **QRCodeService** : Génération et lecture de QR codes (CoreImage)
 - **ExportService** : Export/Import JSON avec compression LZFSE
+- **SharePointSyncService** : Synchronisation des données avec SharePoint via le Backend (Checklists & Conducteurs)
 
 ### ViewModels/
 - Logique de présentation
@@ -109,8 +111,9 @@ RailSkills/
 
 1. **Lecture** : View → ViewModel → Service → Model → UserDefaults
 2. **Écriture** : View → ViewModel → Service → UserDefaults (avec débouncing)
-3. **Export** : ViewModel → ExportService → QRCodeService → View
-4. **Import** : View → ExportService → ViewModel → Service → UserDefaults
+3. **Synchro** : SharePointSyncService ↔ Backend API ↔ SharePoint → Store
+4. **Export** : ViewModel → ExportService → QRCodeService → View
+5. **Import** : View → ExportService → ViewModel → Service → UserDefaults
 
 ## 🎯 Principes de conception
 

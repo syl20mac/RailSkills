@@ -20,7 +20,10 @@ extension AppViewModel {
             return cached
         }
         
-        let map = store.drivers[selectedDriverIndex].checklistStates[cl.title] ?? [:]
+        let driver = store.drivers[selectedDriverIndex]
+        let key = driver.resolveDataKey(for: cl)
+        let map = driver.checklistStates[key] ?? [:]
+        
         cachedStateMap = map
         cachedChecklistTitle = cl.title
         return map
@@ -47,10 +50,10 @@ extension AppViewModel {
         guard store.drivers.indices.contains(selectedDriverIndex) else { return }
         
         let clampedValue = max(0, min(3, value))
-        let key = cl.title
         let currentDate = Date()
         
         var driver = store.drivers[selectedDriverIndex]
+        let key = driver.resolveDataKey(for: cl)
         var map = driver.checklistStates[key] ?? [:]
         let previousValue = map[item.id.uuidString]
         
@@ -87,7 +90,7 @@ extension AppViewModel {
         cachedStateMap = nil
         objectWillChange.send()
         
-        Logger.debug("État mis à jour pour question '\(item.title)': \(clampedValue)", category: "StateManagement")
+        Logger.debug("État mis à jour pour question '\(item.title)': \(clampedValue) (Clé: \(key))", category: "StateManagement")
     }
     
     /// Retourne la date de suivi d'une question
@@ -95,8 +98,9 @@ extension AppViewModel {
         guard let cl = checklist(for: type), !item.isCategory else { return nil }
         guard store.drivers.indices.contains(selectedDriverIndex) else { return nil }
         
-        let key = cl.title
-        let datesMap = store.drivers[selectedDriverIndex].checklistDates[key] ?? [:]
+        let driver = store.drivers[selectedDriverIndex]
+        let key = driver.resolveDataKey(for: cl)
+        let datesMap = driver.checklistDates[key] ?? [:]
         return datesMap[item.id.uuidString]
     }
 
@@ -104,8 +108,9 @@ extension AppViewModel {
     func resetChecklist(type: ChecklistType = .triennale) {
         guard let cl = checklist(for: type) else { return }
         guard store.drivers.indices.contains(selectedDriverIndex) else { return }
-        let key = cl.title
+        
         var driver = store.drivers[selectedDriverIndex]
+        let key = driver.resolveDataKey(for: cl)
         driver.checklistStates[key] = [:]
         
         // Mettre à jour directement le tableau

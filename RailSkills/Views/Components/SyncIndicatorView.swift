@@ -355,7 +355,7 @@ struct SyncDetailsSheet: View {
                 try await store.syncDriversBidirectional()
                 
                 // Synchroniser la checklist si présente
-                if let checklist = store.checklist {
+                if let checklist = store.checklist, AppConfigurationService.shared.allowChecklistUpload {
                     try await sharePointService.syncChecklist(checklist)
                 }
                 
@@ -384,7 +384,6 @@ struct SyncDetailsSheet: View {
         }
     }
 }
-
 
 
 

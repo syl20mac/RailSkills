@@ -47,8 +47,8 @@ struct ChecklistImportWelcomeView: View {
                     
                     do {
                         try vm.importTextFile(url: url, type: checklistType)
-                        importSuccessMessage = "Checklist \(checklistType.displayTitle) importée avec succès !"
-                        Logger.success("Checklist \(checklistType.displayTitle) importée: \(url.lastPathComponent)", category: "ChecklistImport")
+                        importSuccessMessage = "Suivi \(checklistType.displayTitle) importé avec succès !"
+                        Logger.success("Suivi \(checklistType.displayTitle) importé: \(url.lastPathComponent)", category: "ChecklistImport")
                     } catch {
                         importErrorMessage = "Erreur lors de l'import : \(error.localizedDescription)"
                         Logger.error("Erreur d'import: \(error.localizedDescription)", category: "ChecklistImport")
@@ -73,11 +73,11 @@ struct ChecklistImportWelcomeView: View {
             Button("Annuler", role: .cancel) {}
             Button("Créer") {
                 vm.createEmptyChecklist(type: checklistType)
-                importSuccessMessage = "Checklist \(checklistType.displayTitle) vide créée ! Vous pouvez maintenant ajouter des catégories et des questions dans l'onglet Éditeur."
-                Logger.info("Checklist \(checklistType.displayTitle) vide créée", category: "ChecklistImport")
+                importSuccessMessage = "Suivi \(checklistType.displayTitle) vide créé ! Vous pouvez maintenant ajouter des catégories et des questions dans l'onglet Éditeur."
+                Logger.info("Suivi \(checklistType.displayTitle) vide créé", category: "ChecklistImport")
             }
         } message: {
-            Text("Une nouvelle checklist \(checklistType.displayTitle) vide sera créée. Vous pourrez ensuite ajouter des catégories et des questions manuellement dans l'éditeur.")
+            Text("Un nouveau suivi \(checklistType.displayTitle) vide sera créé. Vous pourrez ensuite ajouter des catégories et des questions manuellement dans l'éditeur.")
         }
         .alert("Réinitialiser l'application", isPresented: $showingResetConfirmation) {
             Button("Annuler", role: .cancel) {}
@@ -120,29 +120,35 @@ struct ChecklistImportWelcomeView: View {
     
     private var welcomeText: some View {
         VStack(spacing: 12) {
-            Text("Checklist \(checklistType.displayTitle)")
+            Text("Suivi \(checklistType.displayTitle)")
                 .font(.title)
                 .fontWeight(.bold)
             
-            if checklistType == .triennale {
-                Text("Pour commencer, importez une checklist depuis un fichier JSON ou texte, ou créez-en une manuellement.")
+            if SharePointSyncService.shared.isConfigured {
+                Text("Aucun suivi \(checklistType.displayTitle) chargé. Téléchargez-le depuis SharePoint ou créez-en un vide.")
                     .font(.headline)
                     .foregroundStyle(.primary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                
+                Text("1. Télécharger depuis SharePoint\n2. Créer manuellement les questions")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
             } else {
-                Text("Aucune checklist \(checklistType.displayTitle) chargée. Téléchargez-la depuis SharePoint ou importez un fichier.")
+                Text("Aucun suivi \(checklistType.displayTitle) disponible.")
                     .font(.headline)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
+                
+                Text("Pour commencer, créez un suivi vide et ajoutez vos questions manuellement.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
             }
-            
-            Text("1. Télécharger depuis SharePoint\n2. Importer un fichier JSON ou texte\n3. Créer manuellement les questions et catégories")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
         }
     }
     
@@ -151,13 +157,15 @@ struct ChecklistImportWelcomeView: View {
     
     private var importOptions: some View {
         VStack(spacing: 16) {
-            // Bouton pour télécharger depuis SharePoint
-            sharePointDownloadButton
+            // Si SharePoint est configuré, proposer le téléchargement
+            if SharePointSyncService.shared.isConfigured {
+                sharePointDownloadButton
+                
+                Divider()
+                    .padding(.vertical, 8)
+            }
             
-            Divider()
-                .padding(.vertical, 8)
-            
-            fileImportButton
+            // Création manuelle (toujours disponible)
             createEmptyButton
         }
         .padding(.horizontal, 24)
@@ -201,9 +209,9 @@ struct ChecklistImportWelcomeView: View {
             await MainActor.run {
                 isDownloading = false
                 if success {
-                    importSuccessMessage = "Checklist \(checklistType.displayTitle) téléchargée depuis SharePoint avec succès !"
+                    importSuccessMessage = "Suivi \(checklistType.displayTitle) téléchargé depuis SharePoint avec succès !"
                 } else {
-                    downloadErrorMessage = "Impossible de télécharger la checklist \(checklistType.displayTitle). Vérifiez votre connexion et que le fichier existe sur SharePoint."
+                    downloadErrorMessage = "Impossible de télécharger le suivi \(checklistType.displayTitle). Vérifiez votre connexion et que le fichier existe sur SharePoint."
                 }
             }
         }
@@ -225,7 +233,7 @@ struct ChecklistImportWelcomeView: View {
         Button {
             showingCreateConfirmation = true
         } label: {
-            Label("Créer une checklist vide", systemImage: "plus.circle")
+            Label("Créer un suivi vide", systemImage: "plus.circle")
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
         }

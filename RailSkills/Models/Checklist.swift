@@ -12,16 +12,18 @@ struct Checklist: Codable {
     var title: String          // nom de la checklist
     var items: [ChecklistItem] // tous les éléments (catégories et questions)
     var ownerSNCFId: String?   // identifiant SNCF du CTT propriétaire (optionnel pour rétrocompatibilité)
+    var type: String?          // type explicite: "TRIENNALE", "VP", "TE" (optionnel pour rétrocompatibilité)
     
     // Propriété calculée pour éviter les filtrages répétés - retourne uniquement les questions
     var questions: [ChecklistItem] {
         items.filter { !$0.isCategory }
     }
     
-    init(title: String, items: [ChecklistItem] = [], ownerSNCFId: String? = nil) {
+    init(title: String, items: [ChecklistItem] = [], ownerSNCFId: String? = nil, type: String? = nil) {
         self.title = title
         self.items = items
         self.ownerSNCFId = ownerSNCFId
+        self.type = type
     }
 }
 

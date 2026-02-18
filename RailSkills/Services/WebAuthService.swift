@@ -165,7 +165,9 @@ class WebAuthService: ObservableObject {
     }
     
     /// Crée un nouveau compte utilisateur
-    /// - Parameter email: Email de l'utilisateur
+    /// - Parameters:
+    ///   - email: Email de l'utilisateur
+    ///   - cttId: Identifiant CTT optionnel (pour rattachement manuel)
     /// - Returns: Message de succès
     /// - Throws: WebAuthError en cas d'erreur
     func register(email: String, cttId: String? = nil) async throws -> String {

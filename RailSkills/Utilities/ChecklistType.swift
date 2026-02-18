@@ -19,9 +19,9 @@ enum ChecklistType: String, CaseIterable {
         case .triennale:
             return "Suivi"
         case .vp:
-            return "VP"
+            return "Validation Périodique"
         case .te:
-            return "TE"
+            return "Train d'Essai"
         }
     }
     

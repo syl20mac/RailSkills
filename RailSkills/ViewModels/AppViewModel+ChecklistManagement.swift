@@ -67,7 +67,13 @@ extension AppViewModel {
             title = "Nouvelle checklist TE"
         }
         
-        let newChecklist = Checklist(title: title, items: [])
+        // Créer une checklist avec une structure de base pour éviter qu'elle soit considérée comme "vide" par l'UI
+        let defaultItems = [
+            ChecklistItem(title: "Général", isCategory: true),
+            ChecklistItem(title: "Première question", isCategory: false)
+        ]
+        
+        let newChecklist = Checklist(title: title, items: defaultItems)
         
         // Assigner à la checklist active quel que soit le type
         store.checklist = newChecklist

@@ -90,5 +90,10 @@ enum AppConstants {
         /// Délai minimum entre deux exports (en secondes) - rate limiting
         static let cooldownDelay: TimeInterval = 1.0
     }
+    
+    /// Constantes liées à la synchronisation
+    enum Sync {
+        /// Intervalle minimal entre deux synchronisations automatiques (en secondes)
+        static let autoSyncMinInterval: TimeInterval = 10 * 60
+    }
 }
-

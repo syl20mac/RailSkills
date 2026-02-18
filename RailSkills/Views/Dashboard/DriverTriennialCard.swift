@@ -109,6 +109,7 @@ struct DriverTriennialCard: View {
             }
         }
         .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(UIColor.secondarySystemBackground))
@@ -148,7 +149,7 @@ struct DriverTriennialCard: View {
     private var completionProgress: Double {
         guard let checklist = checklist, !checklist.questions.isEmpty else { return 0 }
         
-        let key = checklist.title
+        let key = driver.resolveDataKey(for: checklist)
         let map = driver.checklistStates[key] ?? [:]
         
         // On compte les items validés (état 2)

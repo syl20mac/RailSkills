@@ -132,9 +132,15 @@ struct OnboardingView: View {
     }
     
     /// Valide l'email et met à jour le message d'erreur
-    private func validateEmail() -> Bool {
-        // Validation générique simple
-        let isValid = email.contains("@") && email.split(separator: "@").last?.contains(".") == true
+    /// Vérifie si le format de l'email est valide (Pure function)
+    private func isValidEmailFormat(_ email: String) -> Bool {
+        return email.contains("@") && email.split(separator: "@").last?.contains(".") == true
+    }
+
+    /// Valide l'email et met à jour le message d'erreur (Side Effect)
+    @discardableResult
+    private func updateEmailValidationState() -> Bool {
+        let isValid = isValidEmailFormat(email)
         if !isValid && !email.isEmpty {
             emailError = "Format d'email invalide"
         } else {
@@ -240,7 +246,7 @@ struct OnboardingView: View {
                             .onChange(of: email) { _, newValue in
                                 // Valider l'email en temps réel
                                 if !newValue.isEmpty {
-                                    _ = validateEmail()
+                                    _ = updateEmailValidationState()
                                 } else {
                                     emailError = nil
                                 }
@@ -425,7 +431,7 @@ struct OnboardingView: View {
         let trimmedName = fullName.trimmingCharacters(in: .whitespaces)
         
         // Valider l'email
-        let emailValidation = validateEmail()
+        let emailValidation = isValidEmailFormat(email)
          
         return !trimmedEmail.isEmpty &&
                emailValidation &&
@@ -728,7 +734,7 @@ struct OnboardingView: View {
     
     private func sendVerificationCode() async {
         // Valider l'email avant d'envoyer
-        guard validateEmail() else {
+        guard updateEmailValidationState() else {
             errorMessage = emailError ?? "Email invalide"
             return
         }

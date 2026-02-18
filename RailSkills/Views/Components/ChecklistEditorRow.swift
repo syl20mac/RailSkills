@@ -10,6 +10,7 @@ import SwiftUI
 /// Ligne d'édition pour une question ou catégorie dans l'éditeur de checklist
 struct ChecklistEditorRow: View {
     let item: ChecklistItem
+    let isReadOnly: Bool
     let onUpdate: (String) -> Void
     let onUpdateNotes: ((String?) -> Void)?
     let onAddQuestion: () -> Void
@@ -38,26 +39,36 @@ struct ChecklistEditorRow: View {
                     .frame(width: 20)
                 
                 // Champ de texte
-                TextField(item.isCategory ? "Nom de la catégorie" : "Question", text: $title)
-                    .focused($isTextFieldFocused)
-                    .textInputAutocapitalization(.sentences)
-                    .autocorrectionDisabled(false)
-                    .submitLabel(.done)
-                    .onSubmit {
-                        // Utiliser un petit délai pour éviter les conflits de contraintes
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            confirmUpdate()
-                            isTextFieldFocused = false
-                        }
-                    }
-                    .onChange(of: isTextFieldFocused) { _, isFocused in
-                        // Utiliser un délai pour éviter les conflits lors du changement de focus
-                        if !isFocused && title != originalTitle {
+                if isReadOnly {
+                    Text(title)
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Image(systemName: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    TextField(item.isCategory ? "Nom de la catégorie" : "Question", text: $title)
+                        .focused($isTextFieldFocused)
+                        .textInputAutocapitalization(.sentences)
+                        .autocorrectionDisabled(false)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            // Utiliser un petit délai pour éviter les conflits de contraintes
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 confirmUpdate()
+                                isTextFieldFocused = false
                             }
                         }
-                    }
+                        .onChange(of: isTextFieldFocused) { _, isFocused in
+                            // Utiliser un délai pour éviter les conflits lors du changement de focus
+                            if !isFocused && title != originalTitle {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    confirmUpdate()
+                                }
+                            }
+                        }
+                }
                 
                 if editMode == .active {
                     // Menu d'actions en mode édition
@@ -76,37 +87,39 @@ struct ChecklistEditorRow: View {
                             }
                         }
                         
-                        Section {
-                            Button {
-                                onConvertType()
-                            } label: {
-                                if item.isCategory {
-                                    Label("Convertir en question", systemImage: "arrow.right.circle")
-                                } else {
-                                    Label("Convertir en catégorie", systemImage: "arrow.right.circle")
+                        if !isReadOnly {
+                            Section {
+                                Button {
+                                    onConvertType()
+                                } label: {
+                                    if item.isCategory {
+                                        Label("Convertir en question", systemImage: "arrow.right.circle")
+                                    } else {
+                                        Label("Convertir en catégorie", systemImage: "arrow.right.circle")
+                                    }
                                 }
                             }
-                        }
-                        
-                        Section {
-                            Button {
-                                // Utiliser un délai pour éviter les conflits de contraintes
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    isTextFieldFocused = true
+                            
+                            Section {
+                                Button {
+                                    // Utiliser un délai pour éviter les conflits de contraintes
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                        isTextFieldFocused = true
+                                    }
+                                } label: {
+                                    Label("Modifier le texte", systemImage: "pencil")
                                 }
-                            } label: {
-                                Label("Modifier le texte", systemImage: "pencil")
                             }
-                        }
-                        
-                        Section {
-                            Button(role: .destructive) {
-                                onDelete()
-                            } label: {
-                                if item.isCategory {
-                                    Label("Supprimer la catégorie", systemImage: "trash")
-                                } else {
-                                    Label("Supprimer la question", systemImage: "trash")
+                            
+                            Section {
+                                Button(role: .destructive) {
+                                    onDelete()
+                                } label: {
+                                    if item.isCategory {
+                                        Label("Supprimer la catégorie", systemImage: "trash")
+                                    } else {
+                                        Label("Supprimer la question", systemImage: "trash")
+                                    }
                                 }
                             }
                         }
@@ -121,7 +134,10 @@ struct ChecklistEditorRow: View {
             if !item.isCategory && onUpdateNotes != nil {
                 HStack(spacing: 8) {
                     Button {
-                        showingExpectedAnswerEditor = true
+                        // Empêcher l'édition des réponses attendues si readOnly
+                        if !isReadOnly {
+                            showingExpectedAnswerEditor = true
+                        }
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: notes.isEmpty ? "lightbulb" : "lightbulb.fill")
@@ -134,6 +150,7 @@ struct ChecklistEditorRow: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .disabled(isReadOnly)
                     
                     if !notes.isEmpty {
                         Spacer()
@@ -199,7 +216,6 @@ struct ChecklistEditorRow: View {
         showingConfirmation = true
     }
 }
-
 
 
 

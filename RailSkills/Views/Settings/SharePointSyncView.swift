@@ -10,6 +10,7 @@ import SwiftUI
 struct SharePointSyncView: View {
     @ObservedObject private var syncService = SharePointSyncService.shared
     @ObservedObject var store: Store
+    @AppStorage("config_allow_checklist_upload") private var allowChecklistUpload: Bool = false
     
     @State private var showingSyncAlert = false
     @State private var syncAlertMessage = ""
@@ -135,7 +136,7 @@ struct SharePointSyncView: View {
                                     .font(.headline)
                             }
                         }
-                        .disabled(syncService.isSyncing)
+                        .disabled(syncService.isSyncing || !allowChecklistUpload)
                     }
                     
 
@@ -144,6 +145,19 @@ struct SharePointSyncView: View {
                 } footer: {
                     Text("Les données sont synchronisées vers SharePoint. Une copie 'latest' est toujours maintenue pour faciliter la récupération.")
                         .foregroundStyle(.secondary)
+                }
+                
+                Section {
+                    Toggle(isOn: $allowChecklistUpload) {
+                        Text("Autoriser l'envoi des checklists")
+                            .font(.headline)
+                    }
+                    
+                    Text("Désactivez cette option pour empêcher l'app d'écraser les checklists côté SharePoint.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Checklists")
                 }
                 
                 // Messages d'erreur
@@ -180,12 +194,16 @@ struct SharePointSyncView: View {
                 }
                 
                 // Synchroniser la checklist si présente
-                if let checklist = store.checklist {
+                if let checklist = store.checklist, allowChecklistUpload {
                     try await syncService.syncChecklist(checklist)
                 }
                 
                 syncAlertTitle = "Synchronisation réussie"
-                syncAlertMessage = "Toutes les données ont été synchronisées vers SharePoint avec succès."
+                if store.checklist != nil && !allowChecklistUpload {
+                    syncAlertMessage = "Synchronisation terminée. Les checklists n'ont pas été envoyées (option désactivée)."
+                } else {
+                    syncAlertMessage = "Toutes les données ont été synchronisées vers SharePoint avec succès."
+                }
                 showingSyncAlert = true
             } catch {
                 syncAlertTitle = "Erreur de synchronisation"
@@ -227,4 +245,3 @@ struct SharePointSyncView: View {
     
 
 }
-

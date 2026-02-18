@@ -140,7 +140,12 @@ enum EncryptionService {
         // Ajouter un "salt" basé sur l'identifiant de l'app pour plus de sécurité
         let salt = "ctt.RailSkills.encryption.salt"
         let combinedSecret = "\(secretToUse).\(salt)"
-        let secretData = combinedSecret.data(using: .utf8)!
+        guard let secretData = combinedSecret.data(using: .utf8) else {
+            // Fallback très improbable pour UTF-8, mais sécurisé
+            Logger.error("Impossible d'encoder le secret en UTF-8", category: "EncryptionService")
+            // Retourner une clé vide sécurisée par défaut pour éviter le crash
+            return SymmetricKey(data: SHA256.hash(data: Data()))
+        }
         
         // Dériver la clé avec SHA256
         let hashedKey = SHA256.hash(data: secretData)
