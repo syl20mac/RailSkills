@@ -30,40 +30,41 @@ final class Store: ObservableObject {
     
     // Données principales de l'application
     @Published var drivers: [DriverRecord] = [] {
-        didSet { 
+        didSet {
             saveDriversDebounced()
-            // Ne pas synchroniser automatiquement si on est en train de supprimer des conducteurs
-            // Cela évite que la synchronisation recrée les fichiers supprimés sur SharePoint
             if !isDeletingDrivers && sharePointAutoSyncEnabled && sharePointService.isConfigured && !drivers.isEmpty {
                 syncDriversToSharePointDebounced()
             }
-            // Mettre à jour l'index de recherche quand les conducteurs changent
             updateSearchIndex()
+            refreshWidgetData()
         }
     }
-    
+
     // Checklists séparées par type
     @Published var checklistTriennale: Checklist? {
-        didSet { 
+        didSet {
             saveChecklistDebounced()
             if sharePointAutoSyncEnabled && sharePointService.isConfigured, checklistTriennale != nil {
                 syncChecklistToSharePointDebounced()
             }
             updateSearchIndex()
+            refreshWidgetData()
         }
     }
-    
+
     @Published var checklistVP: Checklist? {
-        didSet { 
+        didSet {
             saveChecklistDebounced()
             updateSearchIndex()
+            refreshWidgetData()
         }
     }
-    
+
     @Published var checklistTE: Checklist? {
-        didSet { 
+        didSet {
             saveChecklistDebounced()
             updateSearchIndex()
+            refreshWidgetData()
         }
     }
     
