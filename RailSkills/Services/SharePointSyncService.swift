@@ -1416,7 +1416,7 @@ class SharePointSyncService: ObservableObject {
     }
 }
 
-// MARK: - Gestion des conflits
+// Gestion des conflits → voir SharePointSyncService+ConflictResolver.swift
 
 /// Stratégie de résolution des conflits de synchronisation
 enum SyncConflictResolution {

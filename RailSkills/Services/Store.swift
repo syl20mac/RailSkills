@@ -1042,22 +1042,32 @@ final class Store: ObservableObject {
     }
     
     /// Synchronise les conducteurs vers SharePoint (méthode interne)
-    /// Les erreurs sont loggées mais n'interrompent pas l'expérience utilisateur
+    /// En cas d'échec réseau, les opérations sont mises en file d'attente pour retry automatique
     private func syncDriversToSharePoint() async {
         guard sharePointAutoSyncEnabled && sharePointService.isConfigured && !drivers.isEmpty else { return }
-        
-        // Ne pas synchroniser si une synchronisation est déjà en cours
+
         guard !sharePointService.isSyncing else {
             Logger.debug("Synchronisation SharePoint déjà en cours, ignorée", category: "Store")
             return
         }
-        
+
         do {
             try await sharePointService.syncDrivers(drivers)
             Logger.success("\(drivers.count) conducteur(s) synchronisé(s) automatiquement vers SharePoint", category: "Store")
         } catch {
-            // Logger l'erreur mais ne pas interrompre l'utilisateur
-            Logger.warning("Erreur lors de la synchronisation automatique des conducteurs vers SharePoint: \(error.localizedDescription)", category: "Store")
+            Logger.warning("Erreur lors de la synchronisation automatique des conducteurs: \(error.localizedDescription) — mise en file d'attente offline", category: "Store")
+            // Mettre chaque conducteur modifié en file d'attente pour retry
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            for driver in drivers {
+                if let data = try? encoder.encode(driver) {
+                    OfflineQueue.shared.queueOperation(
+                        .driverUpdate,
+                        data: data,
+                        metadata: ["driverName": driver.name, "driverId": driver.id.uuidString]
+                    )
+                }
+            }
         }
     }
     
@@ -1076,23 +1086,30 @@ final class Store: ObservableObject {
     }
     
     /// Synchronise la checklist vers SharePoint (méthode interne)
-    /// Les erreurs sont loggées mais n'interrompent pas l'expérience utilisateur
+    /// En cas d'échec réseau, l'opération est mise en file d'attente pour retry automatique
     private func syncChecklistToSharePoint() async {
         guard sharePointAutoSyncEnabled && sharePointService.isConfigured,
               let currentChecklist = checklist else { return }
-        
-        // Ne pas synchroniser si une synchronisation est déjà en cours
+
         guard !sharePointService.isSyncing else {
             Logger.debug("Synchronisation SharePoint déjà en cours, ignorée", category: "Store")
             return
         }
-        
+
         do {
             try await sharePointService.syncChecklist(currentChecklist)
             Logger.success("Checklist '\(currentChecklist.title)' synchronisée automatiquement vers SharePoint", category: "Store")
         } catch {
-            // Logger l'erreur mais ne pas interrompre l'utilisateur
-            Logger.error("Erreur lors de la synchronisation de la checklist vers SharePoint: \(error)", category: "Store")
+            Logger.error("Erreur lors de la synchronisation de la checklist: \(error) — mise en file d'attente offline", category: "Store")
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            if let data = try? encoder.encode(currentChecklist) {
+                OfflineQueue.shared.queueOperation(
+                    .checklistUpdate,
+                    data: data,
+                    metadata: ["checklistTitle": currentChecklist.title]
+                )
+            }
         }
     }
     

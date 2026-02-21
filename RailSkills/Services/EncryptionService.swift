@@ -196,42 +196,30 @@ enum EncryptionService {
     /// - Parameter data: Les données à chiffrer
     /// - Returns: Les données chiffrées avec le nonce préfixé, ou nil en cas d'erreur
     static func encrypt(_ data: Data) -> Data? {
-        // MDRI Modification: Désactivation du chiffrement sur demande (17/01/2025)
-        // On retourne les données en clair directement
-        Logger.info("Chiffrement désactivé - retour des données en clair", category: "EncryptionService")
-        return data
-        
-        /* Code original désactivé
         let key = getEncryptionKey()
-        
+
         do {
-            // Générer un nonce unique pour chaque chiffrement
             let nonce = AES.GCM.Nonce()
-            
-            // Chiffrer les données
             let sealedBox = try AES.GCM.seal(data, using: key, nonce: nonce)
-            
-            // Combiner le nonce et les données chiffrées
-            // Format: [nonce (12 bytes)][ciphertext + tag (16 bytes)]
+
             guard let encryptedData = sealedBox.combined else {
                 Logger.error("Impossible de combiner les données chiffrées", category: "EncryptionService")
                 return nil
             }
-            
+
+            Logger.info("Données chiffrées avec succès (\(data.count) bytes → \(encryptedData.count) bytes)", category: "EncryptionService")
             return encryptedData
         } catch {
             Logger.error("Erreur lors du chiffrement: \(error.localizedDescription)", category: "EncryptionService")
             return nil
         }
-        */
     }
     
     /// Déchiffre des données avec AES-GCM
     /// - Parameter encryptedData: Les données chiffrées (avec nonce préfixé)
     /// - Returns: Les données déchiffrées ou nil en cas d'erreur
     static func decrypt(_ encryptedData: Data) -> Data? {
-        // MDRI Modification: Support des données en clair (17/01/2025)
-        // Vérifier d'abord si les données sont chiffrées
+        // Vérifier d'abord si les données sont chiffrées (compatibilité avec les anciens fichiers en clair)
         if !isEncrypted(encryptedData) {
             Logger.info("Données non chiffrées détectées, retour direct", category: "EncryptionService")
             return encryptedData

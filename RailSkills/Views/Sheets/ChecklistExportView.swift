@@ -2,7 +2,7 @@
 //  ChecklistExportView.swift
 //  RailSkills
 //
-//  Vue pour exporter une checklist (JSON ou PDF)
+//  Vue pour exporter une checklist en JSON
 //
 
 import SwiftUI
@@ -14,7 +14,7 @@ struct ChecklistExportView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingShareSheet = false
     @State private var shareItems: [Any] = []
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -29,21 +29,10 @@ struct ChecklistExportView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    
-                    Button {
-                        exportAsPDF()
-                    } label: {
-                        HStack {
-                            Label("Exporter en PDF", systemImage: "doc.richtext")
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
                 } header: {
                     Text("Format d'export")
                 }
-                
+
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
@@ -52,14 +41,14 @@ struct ChecklistExportView: View {
                             Text(checklist.title)
                                 .fontWeight(.medium)
                         }
-                        
+
                         HStack {
                             Text("Type:")
                                 .foregroundStyle(.secondary)
                             Text(checklistType.displayTitle)
                                 .fontWeight(.medium)
                         }
-                        
+
                         HStack {
                             Text("Questions:")
                                 .foregroundStyle(.secondary)
@@ -85,30 +74,24 @@ struct ChecklistExportView: View {
         }
         .shareSheet(isPresented: $showingShareSheet, activityItems: shareItems)
     }
-    
-    // MARK: - Export Functions
-    
+
+    // MARK: - Export
+
     private func exportAsJSON() {
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             let jsonData = try encoder.encode(checklist)
-            
-            // Créer un fichier temporaire
+
             let tempURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent("\(checklist.title)_\(checklistType.rawValue).json")
-            
+
             try jsonData.write(to: tempURL)
-            
+
             shareItems = [tempURL]
             showingShareSheet = true
         } catch {
-            print("Erreur lors de l'export JSON: \(error)")
+            Logger.error("Erreur lors de l'export JSON: \(error.localizedDescription)", category: "ChecklistExportView")
         }
-    }
-    
-    private func exportAsPDF() {
-        // TODO: Implémenter l'export PDF via PDFReportGenerator
-        print("Export PDF pour \(checklistType.displayTitle) - À implémenter avec PDFReportGenerator")
     }
 }
